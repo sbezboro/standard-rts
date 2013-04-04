@@ -8,8 +8,8 @@ var http = require('http')
   , config = require('./config');
 
 function handler(req, res) {
-  response.writeHead(200);
-  response.end();
+  res.writeHead(200);
+  res.end();
 }
 
 var rollbar = require("rollbar");
