@@ -3,6 +3,7 @@ var http = require('http')
   , io = require('socket.io').listen(app)
   , convert = require('ansi-to-html')
   , request = require('request')
+  , rollbar = require("rollbar")
   , jsonapi = require('./jsonapi')
   , config = require('./config');
 
@@ -10,6 +11,14 @@ function handler(req, res) {
   response.writeHead(200);
   response.end();
 }
+
+var rollbar = require("rollbar");
+rollbar.init(config.rollbar.accessToken, {
+  environment: config.rollbar.environment,
+  root: config.rollbar.root,
+  branch: config.rollbar.branch
+});
+rollbar.handleUncaughtExceptions();
 
 app.listen(config.port);
 
