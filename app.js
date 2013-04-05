@@ -12,7 +12,6 @@ function handler(req, res) {
   res.end();
 }
 
-var rollbar = require("rollbar");
 rollbar.init(config.rollbar.accessToken, {
   environment: config.rollbar.environment,
   root: config.rollbar.root,
@@ -39,6 +38,12 @@ for (var id in config.servers) {
   apis[id] = api;
 }
 
+// Authenticates the socket connection request by checking the Django session
+// key through the website api.
+// On success, stores the user's username and requeted server id in the socket
+// and continues the connection.
+// On authentication failure or admin authorization failure, the socket is
+// disconnected with a relevant message
 function authSocket(socket, admin, callback) {
   socket.on('auth', function(data) {
     if (!data.djangoSessionKey || !data.serverId) {
@@ -46,13 +51,18 @@ function authSocket(socket, admin, callback) {
       socket.disconnect();
     }
     
+    var form = {
+      'session-key': data.djangoSessionKey,
+    }
+    
+    if (admin) {
+      form['is-admin'] = true;
+    }
+    
     var options = {
       uri: 'http://' + config.website + '/api/auth_session_key',
       method: 'POST',
-      form: {
-        'session-key': data.djangoSessionKey,
-        'is-admin': admin
-      }
+      form: form
     }
     
     request(options, function(error, response, body) {
@@ -69,8 +79,12 @@ function authSocket(socket, admin, callback) {
       
       var serverId = data.serverId;
       var username = JSON.parse(body).username;
+    
+      // Store the current connected user's username for future use
+      socket.username = username;
+      socket.serverId = serverId;
       
-      return callback(null, serverId, username);
+      return callback(null);
     });
   });
 }
@@ -78,17 +92,13 @@ function authSocket(socket, admin, callback) {
 io
 .of('/console')
 .on('connection', function (socket) {
-  authSocket(socket, true, function(error, serverId, username) {
+  authSocket(socket, true, function(error) {
     // Some sort of error, the socket is disconnected at this point so end
     if (error) {
       return;
     }
     
-    // Store the current connected user's username for future use
-    socket.set('username', username);
-    socket.set('serverId', serverId);
-    
-    var api = apis[serverId];
+    var api = apis[socket.serverId];
     
     api.stream('console', function(data) {
       var pat = /(\w*\.?\w+\.[\w+]{2,3}[\/\?\w&=-]*)/;
@@ -132,9 +142,61 @@ io
     getPlayers();
     
     var now = new Date().getTime() / 1000;
-    api.stream('connections', function(json) {
-      if (json.success.time > now) {
+    api.stream('connections', function(data) {
+      if (data.success.time > now) {
         getPlayers();
+      }
+    });
+  });
+});
+
+io
+.of('/chat')
+.on('connection', function (socket) {
+  authSocket(socket, false, function(error) {
+    var now = new Date().getTime() / 1000;
+    
+    // Some sort of error, the socket is disconnected at this point so end
+    if (error) {
+      return;
+    }
+    
+    var api = apis[socket.serverId];
+    
+    socket.on('chat-input', function (data) {
+      if (data.message) {
+        api.call('web_chat', [socket.username, data.message], function(data) {
+        });
+      }
+    });
+    
+    api.stream('console', function(data) {
+      if (data.success.time > now - 300) {
+        var chatpat = /<.*>.*/;
+        var webchatpat = /\[Web Chat\]/;
+        var serverpat = /\[Server\]/;
+        var jsonapipat = /\[JSONAPI\]/;
+        
+        var line = data.success.line.trim().substring(26);
+        
+        if (!line.match(jsonapipat) && (line.match(chatpat) ||
+             line.match(webchatpat) ||
+             line.match(serverpat))) {
+          line = c.toHtml(line);
+          socket.emit('chat', {
+            line: line
+          });
+        }
+      }
+    });
+    
+    api.stream('connections', function(data) {
+      if (data.success.time > now) {
+        var line = data.success.player + " " + data.success.action;
+        
+        socket.emit('chat', {
+          line: line
+        });
       }
     });
   });
