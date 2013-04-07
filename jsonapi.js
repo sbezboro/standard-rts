@@ -74,11 +74,8 @@ JSONAPI = (function() {
         this.debug      = false;
         this.usingWebSocket = false;
 
-        var _socket = false
-        ,   queue = []
-        ,   handlers = {}
-        ,   tagStarter = Math.round(Math.random(Math.random()) * 1000)
-        ,   that = this
+        var tagStarter = Math.round(Math.random(Math.random()) * 1000)
+        ,   _this = this
         ,   _init_started = false
         ;
 
@@ -92,75 +89,11 @@ JSONAPI = (function() {
         }).call(this, args);
 
         function dbug() {
-            if(that.debug) {
+            if(_this.debug) {
                 for(var i = 0; i < arguments.length; i++) {
                     console.log(arguments[i]);
                 }
             }
-        }
-
-        this.socket     = function () {
-            if(_socket == false) {
-                dbug(that.port + 1, that.hostname);
-
-                if(typeof window != 'undefined' && window.WebSocket) {
-                    this.usingWebSocket = true;
-
-                    _socket =  new WebSocket(util.format('ws://%s:%s', that.hostname, that.port + 2));
-                    _socket.onopen = openHandler;
-                    _socket.onerror = errorHandler;
-                    _socket.onmessage = dataHandler;
-                }
-                else {
-                    _socket = net.connect(that.port + 1, that.hostname, openHandler);
-
-                    _socket.on('error', errorHandler);
-                    _socket.on('data', dataHandler);
-                    _socket.on('end', function() {
-                        _socket = false;
-                        _init_started = false;
-                    })
-                }
-            }
-
-            return _socket;
-        };
-
-        function openHandler () {
-            if(queue.length > 0) {
-                queue.forEach(function (v) {
-                    handlers[v.tag] = v.callback;
-                    writeLine(v.line);
-                });
-                queue = [];
-            }
-        }
-
-        function jsonHandler (json) {
-            if(typeof json.tag != "undefined" && handlers[json.tag]) {
-                handlers[json.tag](json);
-            }
-            else
-                throw "JSONAPI is out of date. JSONAPI 3.5.0+ is required.";
-        }
-
-        function dataHandler (data) {
-            if(that.usingWebSocket) data = data.data;
-
-            dbug(data.toString());
-            data.toString().trim().split("\r\n").forEach(function (v) {
-                dbug(v);
-                try {
-                    jsonHandler(JSON.parse(v));
-                } catch(e) {
-                    console.log('JSON Error ' + e);
-                }
-            });
-        }
-
-        function errorHandler (e) {
-            _socket = false;
-            _init_started = false;
         }
 
         var urlFormat = "/api/%s?method=%s&args=%s&key=%s%s"
@@ -168,7 +101,7 @@ JSONAPI = (function() {
         ,   fqnFormat = "%s:%s";
 
         function fqn() {
-            return util.format(fqnFormat, that.hostname, that.port);
+            return util.format(fqnFormat, _this.hostname, _this.port);
         }
 
         function base () {
@@ -212,7 +145,7 @@ JSONAPI = (function() {
         }
 
         function makeKey(method) {
-            var text = util.format('%s%s%s%s', that.username, method, that.password, that.salt);
+            var text = util.format('%s%s%s%s', _this.username, method, _this.password, _this.salt);
 
             method = encodeURIComponent(util.isArray(method) ? JSON.stringify(method) : method);
 
@@ -225,51 +158,80 @@ JSONAPI = (function() {
             tagStarter++;
             return tagStarter;
         }
+        
+        function _startConnection(url, callback) {
+            var socket = net.connect(_this.port + 1, _this.hostname);
+            var receivedData = "";
 
-        function writeLine(line) {
-            dbug("writing:"+line);
-
-            if(that.usingWebSocket) {
-                that.socket().send(line);
-            }
-            else {
-                that.socket().write(line + "\r\n");
+            socket.on('error', function() {
+                if (callback) {
+                    callback(new Error());
+                }
+            });
+            
+            socket.on('data', function(data) {
+                if(_this.usingWebSocket) data = data.data;
+                
+                dbug(data.toString());
+                data.toString().trim().split("\r\n").forEach(function (v) {
+                    v = receivedData + v;
+                    
+                    if (v.lastIndexOf('}') == v.length - 1) {
+                        dbug(v);
+                        
+                        var json;
+                        try {
+                            json = JSON.parse(v);
+                        } catch (e) {
+                            console.log('JSON Error ' + e);
+                            console.log(v);
+                        }
+                        
+                        if (json && callback) {
+                            callback(null, json);
+                        }
+                            
+                        receivedData = "";
+                    } else {
+                        if (v.indexOf('{"result"') == 0) {
+                            receivedData = v;
+                        } else {
+                            receivedData += v;
+                        }
+                    }
+                });
+            });
+            
+            socket.on('end', function() {
+                if (callback) {
+                    callback(new Error());
+                }
+            })
+            
+            if (_this.usingWebSocket) {
+                socket.send(url);
+            } else {
+                socket.write(url + "\r\n");
             }
         }
 
-        this.call = function (method, arguments, callback) {
-            if(typeof callback == 'undefined' && typeof arguments == "function") {
-                callback = arguments;
-                arguments = [];
+        this.call = function (method, args, callback) {
+            if(typeof callback == 'undefined' && typeof args == "function") {
+                callback = args;
+                args = [];
             }
 
-            if(typeof arguments == "undefined") {
-                arguments = [];
+            if(typeof args == "undefined") {
+                args = [];
             }
-            else if(!util.isArray(arguments)) {
-                arguments = [arguments];
+            else if(!util.isArray(args)) {
+                args = [args];
             }
 
-            var tag = makeTag()
-            ,   url = makeURL(method, arguments, tag)
-            ;
-
-            if(_socket == false) {
-                queue.push({
-                    "line": url,
-                    "tag": tag,
-                    "callback": callback
-                });
-
-                if(_init_started == false) {
-                    that.socket();
-                    _init_started = true;
-                }
-            }
-            else {
-                handlers[tag] = callback;
-                writeLine(url);
-            }
+            var tag = makeTag();
+            var url = makeURL(method, args, tag);
+            
+            _startConnection(url, callback);
         }
 
         this.stream = function(streamName, sendOld, callback) {
@@ -278,38 +240,14 @@ JSONAPI = (function() {
                 sendOld = true;
             }
 
-            var tag = makeTag()
-            ,   url = makeStreamURL(streamName, sendOld, tag)
-            ;
-
-            if(_socket == false) {
-                queue.push({
-                    "line": url,
-                    "tag": tag,
-                    "callback": callback
-                });
-
-                if(_init_started == false) {
-                    that.socket();
-                    _init_started = true;
-                }
-            }
-            else {
-                handlers[tag] = callback;
-                writeLine(url);
-            }
+            var tag = makeTag();
+            var url = makeStreamURL(streamName, sendOld, tag);
+            
+            _startConnection(url, callback);
         }
 
         this.close = function () {
-            if(_socket) {
-                if(that.usingWebSocket) {
-                    this.socket().close();
-                }
-                else {
-                    this.socket().end();
-                }
-                handles = {};
-            }
+            
         }
     }
 
