@@ -48,16 +48,26 @@ streams.startStreams();
 /* Authenticates the socket connection request by checking the Django session
  * key with the website api.
  *
- * If the user is logged in and their session key is valid, their username
- * will be stored in the socket.
+ * If the user is logged in and their session key is valid, their user_id and
+ * username will be stored in the socket and the connection will proceed.
  * 
  * If the admin parameter is set, the api will make sure the user associated
  * with the session key is an admin, otherwise the api will return a 403. */
 function authSocket(socket, admin, callback) {
   socket.on('auth', function(data) {
-    if (!data.djangoSessionKey || !data.serverId) {
+    // The client must provide a serverId. It must also provide djangoSessionKey
+    // if this request is for an elevated privilege socket
+    if (!data.serverId || (!data.djangoSessionKey && admin)) {
       socket.emit('unauthorized');
       socket.disconnect();
+      return callback(new Error());
+    }
+    
+    socket.serverId = data.serverId;
+    
+    // Anonymous request, just continue the socket connection without storing user data
+    if (!data.djangoSessionKey) {
+      return callback(null);
     }
     
     var form = {
@@ -86,15 +96,16 @@ function authSocket(socket, admin, callback) {
         return callback(new Error());
       }
       
-      var serverId = data.serverId;
-      var username = JSON.parse(body).username;
+      var result = JSON.parse(body);
     
-      // Store the current connected user's username for future use
-      socket.username = username;
-      socket.serverId = serverId;
+      // Store the authenticated user's id and username for future use
+      socket.userId = result.user_id;
+      socket.username = result.username;
       
       return callback(null);
     });
+    
+    return null;
   });
 }
 
@@ -208,12 +219,14 @@ io
       var chatpat = /<.*>\ /;
       var webchatpat = /\[Web Chat\]/;
       var serverpat = /\[Server\]/;
+      var forumpat = /\[Forum\]/;
       
       var line = data.success.line.trim().substring(26);
       
       if (line.match(chatpat) ||
           line.match(webchatpat) ||
-          line.match(serverpat)) {
+          line.match(serverpat) ||
+          line.match(forumpat)) {
         line = c.toHtml(line);
         socket.emit('chat', {
           line: line
