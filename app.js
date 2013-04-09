@@ -190,11 +190,14 @@ io
     
     var api = apis[socket.serverId];
     
-    // Listen for chat input if the user is authenticated
+    if (socket.username) {
+        api.call('web_chat', ['enter', socket.username]);
+    }
+    
     socket.on('chat-input', function (data) {
       if (socket.username) {
         if (data.message) {
-          api.call('web_chat', [socket.username, data.message], function(data) {
+          api.call('web_chat', ['message', socket.username, data.message], function(data) {
           });
         }
       } else {
@@ -246,6 +249,10 @@ io
     
     socket.on('disconnect', function() {
       streams.removeListeners(socket.id);
+    
+      if (socket.username) {
+        api.call('web_chat', ['exit', socket.username]);
+      }
     });
   });
 });
