@@ -27,6 +27,10 @@ app.listen(config.port);
 var c = new convert();
 var apis = {};
 
+// Use to counter spammy users
+var nextConnectionTimes = {};
+var nextChatTimes = {};
+
 for (var id in config.servers) {
   var address = config.servers[id];
   
@@ -191,14 +195,31 @@ io
     var api = apis[socket.serverId];
     
     if (socket.username) {
-        api.call('web_chat', ['enter', socket.username]);
+      var now = new Date().getTime();
+      if (nextConnectionTimes[socket.username] && now < nextConnectionTimes[socket.username]) {
+        nextConnectionTimes[socket.username] = now + 30000;
+        socket.emit('connection-spam');
+        return;
+      }
+      
+      api.call('web_chat', ['enter', socket.username]);
+      nextConnectionTimes[socket.username] = now + 1000;
     }
     
     socket.on('chat-input', function (data) {
       if (socket.username) {
         if (data.message) {
-          api.call('web_chat', ['message', socket.username, data.message], function(data) {
-          });
+          var now = new Date().getTime();
+          var nextChatDelay = 500;
+          
+          if (nextChatTimes[socket.username] && now < nextChatTimes[socket.username]) {
+            socket.emit('chat-spam');
+            nextChatDelay += 2000;
+          } else {
+            api.call('web_chat', ['message', socket.username, data.message], function(data) {});
+          }
+          
+          nextChatTimes[socket.username] = now + nextChatDelay;
         }
       } else {
         socket.emit('chat', {
