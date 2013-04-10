@@ -8,7 +8,7 @@ var streamStart = {};
 
 var log = {};
 
-exports.startStream = function(id, source) {
+function startStream(id, source) {
   var api = app.apis[id];
   
   streamStart[id][source] = new Date().getTime() / 1000;
@@ -23,7 +23,7 @@ exports.startStream = function(id, source) {
       
       console.log("Stream error for source '" + source + "' and server id " + id + ", retrying in 2 seconds");
       setTimeout(function() {
-        exports.startStream(id, source);
+        startStream(id, source);
       }, 2000);
     } else {
       if (data.success.time < streamStart[id][source]) {
@@ -52,7 +52,7 @@ exports.startStreams = function() {
       streamListeners[id][source] = [];
       log[id][source] = [];
       
-      exports.startStream(id, source);
+      startStream(id, source);
     });
   }
 }
@@ -78,7 +78,7 @@ exports.removeListeners = function(socketId) {
       var i = listeners.length;
       while (i--) {
         if (listeners[i].socketId == socketId) {
-          listeners.splice(i);
+          listeners.splice(i, 1);
         } 
       }
     });

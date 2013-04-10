@@ -53,11 +53,11 @@ streams.startStreams();
  * 
  * If the admin parameter is set, the api will make sure the user associated
  * with the session key is an admin, otherwise the api will return a 403. */
-function authSocket(socket, admin, callback) {
+function authSocket(socket, isAdmin, callback) {
   socket.on('auth', function(data) {
     // The client must provide a serverId. It must also provide djangoSessionKey
     // if this request is for an elevated privilege socket
-    if (!data.serverId || (!data.djangoSessionKey && admin)) {
+    if (!data.serverId || (!data.djangoSessionKey && isAdmin)) {
       socket.emit('unauthorized');
       socket.disconnect();
       return callback(new Error());
@@ -74,7 +74,7 @@ function authSocket(socket, admin, callback) {
       'session-key': data.djangoSessionKey,
     }
     
-    if (admin) {
+    if (isAdmin) {
       form['is-admin'] = true;
     }
     
