@@ -260,6 +260,10 @@ io
     
     streams.addListener(socket.id, socket.serverId, 'connections', function(error, data) {
       if (!error) {
+        if (config.hiddenUsers && config.hiddenUsers.indexOf(data.success.player) != -1) {
+          return;
+        }
+        
         var line = data.success.player + " " + data.success.action;
         
         socket.emit('chat', {
