@@ -113,6 +113,18 @@ function authSocket(socket, isAdmin, callback) {
   });
 }
 
+var getPlayers = function(api, socket) {
+  api.call('server_status', function(error, data) {
+    if (!error) {
+      socket.emit('player-list', {
+        players: data.success.players,
+        numPlayers: data.success.numplayers,
+        maxPlayers: data.success.maxplayers
+      });
+    }
+  });
+}
+
 io
 .of('/console')
 .on('connection', function (socket) {
@@ -157,23 +169,11 @@ io
       }
     });
     
-    var getPlayers = function() {
-      api.call('server_status', function(error, data) {
-        if (!error) {
-          socket.emit('player-list', {
-            players: data.success.players,
-            numPlayers: data.success.numplayers,
-            maxPlayers: data.success.maxplayers
-          });
-        }
-      });
-    }
-    
-    getPlayers();
+    getPlayers(api, socket);
     
     streams.addListener(socket.id, socket.serverId, 'connections', function(error, data) {
       if (!error) {
-        getPlayers();
+        getPlayers(api, socket);
       }
     });
     
@@ -258,8 +258,12 @@ io
       }
     });
     
+    getPlayers(api, socket);
+    
     streams.addListener(socket.id, socket.serverId, 'connections', function(error, data) {
       if (!error) {
+        getPlayers(api, socket);
+        
         if (config.hiddenUsers && config.hiddenUsers.indexOf(data.success.player) != -1) {
           return;
         }
