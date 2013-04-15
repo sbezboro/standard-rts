@@ -17,14 +17,19 @@ var RealtimeServer = function() {
   this.nextChatTimes = {};
   
   this.ansiconvert = null;
+  
+  this.connectedUsers = [];
 }
 
 RealtimeServer.prototype = {
   init : function(config) {
     this.config = config;
     
+    var self = this;
+    
     this.app = http.createServer(function(req, res) {
       res.writeHead(200);
+      res.write(JSON.stringify(self.connectedUsers));
       res.end();
     });
     
@@ -33,7 +38,10 @@ RealtimeServer.prototype = {
       root: config.rollbar.root,
       branch: config.rollbar.branch
     });
-    //rollbar.handleUncaughtExceptions();
+    
+    if (!config.debug) {
+      rollbar.handleUncaughtExceptions();
+    }
     
     this.ansiconvert = new ansitohtml();
     
@@ -132,6 +140,44 @@ RealtimeServer.prototype = {
     });
   },
   
+  addConnectedUser : function(socket, type) {
+    var user = {
+      socketId: socket.id,
+      connectionTime: new Date().getTime() / 1000,
+      address: socket.handshake.address.address,
+      type: type
+    };
+    
+    if (socket.userId && socket.username) {
+      user.id = socket.userId;
+      user.username = socket.username;
+      
+      for (var i = 0; i < this.connectedUsers.length; ++i) {
+        var existingUser = this.connectedUsers[i];
+        
+        if (existingUser.id == user.id && existingUser.type == type) {
+          return false;
+        }
+      }
+    }
+    
+    this.connectedUsers.push(user);
+    
+    return true;
+  },
+  
+  removeConnectedUser : function(socketId) {
+    var i = this.connectedUsers.length;
+    while (i--) {
+      var existingUser = this.connectedUsers[i];
+      
+      if (existingUser.socketId == socketId) {
+        this.connectedUsers.splice(i, 1);
+        return;
+      }
+    }
+  },
+  
   start : start = function() {
     this.app.listen(this.config.port);
     this.io = socketio.listen(this.app);
@@ -152,6 +198,8 @@ RealtimeServer.prototype = {
         }
         
         var api = self.apis[socket.serverId];
+        
+        self.addConnectedUser(socket, 'console');
         
         var lastError;
         streams.addListener(socket.id, socket.serverId, 'console', function(error, data) {
@@ -196,6 +244,7 @@ RealtimeServer.prototype = {
         
         socket.on('disconnect', function() {
           streams.removeListeners(socket.id);
+          self.removeConnectedUser(socket.id);
         });
       });
     });
@@ -219,8 +268,13 @@ RealtimeServer.prototype = {
             return;
           }
           
-          api.call('web_chat', ['enter', socket.username]);
           self.nextConnectionTimes[socket.username] = now + 1000;
+        }
+        
+        var uniqueConnection = self.addConnectedUser(socket, 'chat');
+        
+        if (socket.username && uniqueConnection) {
+          api.call('web_chat', ['enter', socket.username]);
         }
         
         socket.on('chat-input', function (data) {
@@ -295,8 +349,9 @@ RealtimeServer.prototype = {
         
         socket.on('disconnect', function() {
           streams.removeListeners(socket.id);
-        
-          if (socket.username) {
+          self.removeConnectedUser(socket.id);
+          
+          if (socket.username && uniqueConnection) {
             api.call('web_chat', ['exit', socket.username]);
           }
         });

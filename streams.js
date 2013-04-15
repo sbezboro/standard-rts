@@ -79,6 +79,7 @@ exports.removeListeners = function(socketId) {
       while (i--) {
         if (listeners[i].socketId == socketId) {
           listeners.splice(i, 1);
+          return;
         } 
       }
     });
