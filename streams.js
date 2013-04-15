@@ -1,4 +1,4 @@
-var app = require('./app');
+var realtime = require('./realtime');
 
 var LOG_LENGTH = 500;
 
@@ -9,7 +9,7 @@ var streamStart = {};
 var log = {};
 
 function startStream(id, source) {
-  var api = app.apis[id];
+  var api = realtime.apis[id];
   
   streamStart[id][source] = new Date().getTime() / 1000;
   
@@ -43,7 +43,7 @@ function startStream(id, source) {
 }
 
 exports.startStreams = function() {
-  for (id in app.apis) {
+  for (id in realtime.apis) {
     streamListeners[id] = {};
     streamStart[id] = {};
     log[id] = {};
@@ -71,7 +71,7 @@ exports.addListener = function(socketId, serverId, source, callback) {
 }
 
 exports.removeListeners = function(socketId) {
-  for (id in app.apis) {
+  for (id in realtime.apis) {
     streamSources.map(function(source) {
       var listeners = streamListeners[id][source];
       
