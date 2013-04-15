@@ -143,7 +143,7 @@ RealtimeServer.prototype = {
   addConnectedUser : function(socket, type) {
     var user = {
       socketId: socket.id,
-      connectionTime: new Date().getTime() / 1000,
+      connectionTime: Math.floor(new Date().getTime() / 1000),
       address: socket.handshake.address.address,
       type: type
     };
