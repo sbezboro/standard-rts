@@ -1,8 +1,6 @@
 var realtime = require('./realtime')
   , config = require('./config');
 
-var realtimeServer = new realtime.RealtimeServer();
+realtime.init(config);
 
-realtimeServer.init(config);
-
-realtimeServer.start();
+realtime.start();
