@@ -341,10 +341,13 @@ exports.start = function() {
       
       socket.on('disconnect', function() {
         streams.removeListeners(socket.id);
-        removeConnectedUser(socket.id);
         
-        if (socket.username && uniqueConnection) {
-          api.call('web_chat', ['exit', socket.username]);
+        if (uniqueConnection) {
+          removeConnectedUser(socket.id);
+          
+          if (socket.username) {
+            api.call('web_chat', ['exit', socket.username]);
+          }
         }
       });
     });
