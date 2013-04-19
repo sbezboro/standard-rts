@@ -3,6 +3,7 @@ var http = require('http')
   , ansitohtml = require('ansi-to-html')
   , request = require('request')
   , rollbar = require('rollbar')
+  , events = require('events')
   , jsonapi = require('./jsonapi')
   , streams = require('./streams');
 
@@ -18,6 +19,8 @@ var nextChatTimes = {};
 var ansiconvert = null;
   
 var connectedUsers = [];
+
+var emitter;
 
   
 /* Authenticates the socket connection request by checking the Django session
@@ -157,6 +160,8 @@ exports.init = function(_config) {
   
   ansiconvert = new ansitohtml();
   
+  emitter = new events.EventEmitter();
+  
   for (var id in config.servers) {
     var address = config.servers[id];
     
@@ -226,6 +231,12 @@ exports.start = function() {
         }
       });
       
+      eventEmitter.on('chat-connection', function(data) {
+        socket.emit('chat-users', {
+          users: connectedUsers
+        });
+      });
+      
       getPlayers(api, socket);
       
       streams.addListener(socket.id, socket.serverId, 'connections', function(error, data) {
@@ -268,6 +279,8 @@ exports.start = function() {
       if (socket.username && uniqueConnection) {
         api.call('web_chat', ['enter', socket.username]);
       }
+      
+      emitter.emit('chat-connection');
       
       socket.on('chat-input', function (data) {
         if (socket.username) {
@@ -341,6 +354,8 @@ exports.start = function() {
       
       socket.on('disconnect', function() {
         streams.removeListeners(socket.id);
+        
+        emitter.emit('chat-connection');
         
         if (uniqueConnection) {
           removeConnectedUser(socket.id);
