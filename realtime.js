@@ -92,6 +92,11 @@ function authSocket(socket, isAdmin, callback) {
 function getPlayers(api, socket) {
   api.call('server_status', function(error, data) {
     if (!error) {
+      // Don't expose player IP addresses to clients
+      for (var i = 0; i < data.success.players.length; ++i) {
+        delete data.success.players[i].address;
+      }
+      
       socket.emit('player-list', {
         players: data.success.players,
         numPlayers: data.success.numplayers,
