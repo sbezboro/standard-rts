@@ -231,6 +231,10 @@ exports.start = function() {
         }
       });
       
+      socket.emit('chat-users', {
+        users: connectedUsers
+      });
+      
       emitter.on('chat-connection', function(data) {
         socket.emit('chat-users', {
           users: connectedUsers
