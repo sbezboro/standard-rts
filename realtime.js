@@ -231,7 +231,7 @@ exports.start = function() {
         }
       });
       
-      eventEmitter.on('chat-connection', function(data) {
+      emitter.on('chat-connection', function(data) {
         socket.emit('chat-users', {
           users: connectedUsers
         });
@@ -285,6 +285,8 @@ exports.start = function() {
       socket.on('chat-input', function (data) {
         if (socket.username) {
           if (data.message) {
+            data.message = data.message.substring(0, Math.min(80, data.message.length));
+            
             var now = new Date().getTime();
             var nextChatDelay = 500;
             
