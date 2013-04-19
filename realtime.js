@@ -89,12 +89,14 @@ function authSocket(socket, isAdmin, callback) {
   });
 }
 
-function getPlayers(api, socket) {
+function getPlayers(api, socket, hideIPs) {
   api.call('server_status', function(error, data) {
     if (!error) {
       // Don't expose player IP addresses to clients
-      for (var i = 0; i < data.success.players.length; ++i) {
-        delete data.success.players[i].address;
+      if (hideIPs) {
+        for (var i = 0; i < data.success.players.length; ++i) {
+          delete data.success.players[i].address;
+        }
       }
       
       socket.emit('player-list', {
@@ -345,11 +347,11 @@ exports.start = function() {
         }
       });
       
-      getPlayers(api, socket);
+      getPlayers(api, socket, true);
       
       streams.addListener(socket.id, socket.serverId, 'connections', function(error, data) {
         if (!error) {
-          getPlayers(api, socket);
+          getPlayers(api, socket, true);
           
           if (config.hiddenUsers && config.hiddenUsers.indexOf(data.success.player) != -1) {
             return;
