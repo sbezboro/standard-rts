@@ -368,8 +368,6 @@ exports.start = function() {
       socket.on('disconnect', function() {
         streams.removeListeners(socket.id);
         
-        emitter.emit('chat-connection');
-        
         if (uniqueConnection) {
           removeConnectedUser(socket.id);
           
@@ -377,6 +375,8 @@ exports.start = function() {
             api.call('web_chat', ['exit', socket.username]);
           }
         }
+        
+        emitter.emit('chat-connection');
       });
     });
   });
