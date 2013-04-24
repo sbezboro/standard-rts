@@ -59,7 +59,7 @@ function authSocket(socket, isAdmin, callback) {
     }
     
     var options = {
-      uri: 'http://' + config.website + '/api/auth_session_key',
+      uri: 'http://' + config.website + '/api/v1/auth_session_key',
       method: 'POST',
       form: form
     }
