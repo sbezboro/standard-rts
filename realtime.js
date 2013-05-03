@@ -273,22 +273,97 @@ exports.start = function() {
       }
       
       var api = apis[socket.serverId];
-      
-      if (socket.username) {
-        var now = new Date().getTime();
-        if (nextConnectionTimes[socket.username] && now < nextConnectionTimes[socket.username]) {
-          nextConnectionTimes[socket.username] = now + 30000;
-          socket.emit('connection-spam');
-          return;
-        }
         
-        nextConnectionTimes[socket.username] = now + 1000;
-      }
-      
       var uniqueConnection = addConnectedUser(socket, 'chat');
       
-      if (socket.username && uniqueConnection) {
-        api.call('web_chat', ['enter', socket.username]);
+      function addStreamListeners() {
+        var lastError;
+        streams.addListener(socket.id, socket.serverId, 'console', function(error, data) {
+          if (error) {
+            if (!lastError) {
+              lastError = error;
+              socket.emit('mc-connection-lost');
+            }
+            return;
+          } else {
+            lastError = null;
+          }
+          
+          var chatpat = /<.*>\ /;
+          var webchatpat = /\[Web Chat\]/;
+          var serverpat = /\[Server\]/;
+          var forumpat = /\[Forum\]/;
+          
+          var line = data.success.line.trim().substring(26);
+          
+          if (line.match(chatpat) ||
+              line.match(webchatpat) ||
+              line.match(serverpat) ||
+              line.match(forumpat)) {
+            line = ansiconvert.toHtml(line);
+            socket.emit('chat', {
+              line: line
+            });
+          }
+        });
+        
+        getPlayers(api, socket, true);
+        
+        streams.addListener(socket.id, socket.serverId, 'connections', function(error, data) {
+          if (!error) {
+            getPlayers(api, socket, true);
+            
+            if (config.hiddenUsers && config.hiddenUsers.indexOf(data.success.player) != -1) {
+              return;
+            }
+            
+            var line = '<span style="color:#A50">' + data.success.player + " " + data.success.action + '</span>';
+            
+            socket.emit('chat', {
+              line: line
+            });
+          }
+        });
+      }
+      
+      // Set up streams and announce to the server that this user has
+      // joined web chat (if logged in)
+      function joinServer() {
+        if (socket.username) {
+          var now = new Date().getTime();
+          if (nextConnectionTimes[socket.username] && now < nextConnectionTimes[socket.username]) {
+            nextConnectionTimes[socket.username] = now + 30000;
+            socket.emit('connection-spam');
+            return false;
+          }
+          
+          nextConnectionTimes[socket.username] = now + 1000;
+        }
+        
+        if (socket.username && uniqueConnection) {
+          api.call('web_chat', ['enter', socket.username]);
+        }
+    
+        addStreamListeners();
+        
+        return true;
+      }
+      
+      // Remove streams and announce to the server that this user has
+      // left web chat (if logged in)
+      function leaveServer() {
+        streams.removeListeners(socket.id);
+        
+        if (uniqueConnection) {
+          if (socket.username) {
+            api.call('web_chat', ['exit', socket.username]);
+          }
+        }
+      }
+      
+      // If the user was blocked from accessing this server, end the connection
+      if (!joinServer()) {
+        return;
       }
       
       emitter.emit('chat-connection');
@@ -317,63 +392,20 @@ exports.start = function() {
         }
       });
       
-      var lastError;
-      streams.addListener(socket.id, socket.serverId, 'console', function(error, data) {
-        if (error) {
-          if (!lastError) {
-            lastError = error;
-            socket.emit('mc-connection-lost');
-          }
-          return;
-        } else {
-          lastError = null;
-        }
+      // Allow the client to switch the server they observe
+      socket.on('switch-server', function(data) {
+        leaveServer();
         
-        var chatpat = /<.*>\ /;
-        var webchatpat = /\[Web Chat\]/;
-        var serverpat = /\[Server\]/;
-        var forumpat = /\[Forum\]/;
+        socket.serverId = data.serverId;
+        api = apis[data.serverId];
         
-        var line = data.success.line.trim().substring(26);
-        
-        if (line.match(chatpat) ||
-            line.match(webchatpat) ||
-            line.match(serverpat) ||
-            line.match(forumpat)) {
-          line = ansiconvert.toHtml(line);
-          socket.emit('chat', {
-            line: line
-          });
-        }
-      });
-      
-      getPlayers(api, socket, true);
-      
-      streams.addListener(socket.id, socket.serverId, 'connections', function(error, data) {
-        if (!error) {
-          getPlayers(api, socket, true);
-          
-          if (config.hiddenUsers && config.hiddenUsers.indexOf(data.success.player) != -1) {
-            return;
-          }
-          
-          var line = '<span style="color:#A50">' + data.success.player + " " + data.success.action + '</span>';
-          
-          socket.emit('chat', {
-            line: line
-          });
-        }
+        joinServer();
       });
       
       socket.on('disconnect', function() {
-        streams.removeListeners(socket.id);
-        
+        leaveServer();
         if (uniqueConnection) {
           removeConnectedUser(socket.id);
-          
-          if (socket.username) {
-            api.call('web_chat', ['exit', socket.username]);
-          }
         }
         
         emitter.emit('chat-connection');
