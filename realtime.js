@@ -361,6 +361,8 @@ exports.start = function() {
         }
       }
       
+      joinServer();
+      
       emitter.emit('chat-connection');
       
       socket.on('chat-input', function (data) {
