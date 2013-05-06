@@ -205,30 +205,42 @@ exports.start = function() {
       
       addConnectedUser(socket, 'console');
       
-      var lastError;
-      streams.addListener(socket.id, socket.serverId, 'console', function(error, data) {
-        if (error) {
-          if (!lastError) {
-            lastError = error;
-            socket.emit('mc-connection-lost');
+      function addStreamListeners() {
+        var lastError;
+        streams.addListener(socket.id, socket.serverId, 'console', function(error, data) {
+          if (error) {
+            if (!lastError) {
+              lastError = error;
+              socket.emit('mc-connection-lost');
+            }
+            return;
+          } else {
+            lastError = null;
           }
-          return;
-        } else {
-          lastError = null;
-        }
-        
-        var urlpat = /(\w*\.?\w+\.[\w+]{2,3}[\/\?\w&=-]*)/;
-        var line = data.success.line.trim().substring(11);
-        
-        // Convert ansi color to html
-        line = ansiconvert.toHtml(line);
-        // Linkify possible urls
-        line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');
-        
-        socket.emit('console', {
-          line: line
+          
+          var urlpat = /(\w*\.?\w+\.[\w+]{2,3}[\/\?\w&=-]*)/;
+          var line = data.success.line.trim().substring(11);
+          
+          // Convert ansi color to html
+          line = ansiconvert.toHtml(line);
+          // Linkify possible urls
+          line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');
+          
+          socket.emit('console', {
+            line: line
+          });
         });
-      });
+      
+        streams.addListener(socket.id, socket.serverId, 'connections', function(error, data) {
+          if (!error) {
+            getPlayers(api, socket);
+          }
+        });
+      
+        getPlayers(api, socket);
+      }
+      
+      addStreamListeners();
       
       socket.on('console-input', function(data) {
         if (data.message) {
@@ -248,11 +260,15 @@ exports.start = function() {
         });
       });
       
-      getPlayers(api, socket);
-      
-      streams.addListener(socket.id, socket.serverId, 'connections', function(error, data) {
-        if (!error) {
-          getPlayers(api, socket);
+      // Allow the client to switch the server they observe
+      socket.on('switch-server', function(data) {
+        if (data.serverId != socket.serverId) {
+          streams.removeListeners(socket.id);
+        
+          socket.serverId = data.serverId;
+          api = apis[data.serverId];
+          
+          addStreamListeners();
         }
       });
       
@@ -307,8 +323,6 @@ exports.start = function() {
           }
         });
         
-        getPlayers(api, socket, true);
-        
         streams.addListener(socket.id, socket.serverId, 'connections', function(error, data) {
           if (!error) {
             getPlayers(api, socket, true);
@@ -324,6 +338,8 @@ exports.start = function() {
             });
           }
         });
+        
+        getPlayers(api, socket, true);
       }
       
       // Set up streams and announce to the server that this user has
