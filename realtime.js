@@ -334,18 +334,20 @@ exports.start = function() {
           if (nextConnectionTimes[socket.username] && now < nextConnectionTimes[socket.username]) {
             nextConnectionTimes[socket.username] = now + 30000;
             socket.emit('connection-spam');
+            socket.blocked = true;
             return false;
           }
           
           nextConnectionTimes[socket.username] = now + 1000;
         }
         
-        if (socket.username && uniqueConnection) {
+        if (uniqueConnection && socket.username && !socket.blocked) {
           api.call('web_chat', ['enter', socket.username]);
         }
     
         addStreamListeners();
         
+        socket.blocked = false;
         return true;
       }
       
@@ -354,21 +356,18 @@ exports.start = function() {
       function leaveServer() {
         streams.removeListeners(socket.id);
         
-        if (uniqueConnection) {
-          if (socket.username) {
-            api.call('web_chat', ['exit', socket.username]);
-          }
+        if (uniqueConnection && socket.username && !socket.blocked) {
+          api.call('web_chat', ['exit', socket.username]);
         }
-      }
-      
-      // If the user was blocked from accessing this server, end the connection
-      if (!joinServer()) {
-        return;
       }
       
       emitter.emit('chat-connection');
       
       socket.on('chat-input', function (data) {
+        if (socket.blocked) {
+          return;
+        }
+        
         if (socket.username) {
           if (data.message) {
             data.message = data.message.substring(0, Math.min(80, data.message.length));
@@ -394,12 +393,14 @@ exports.start = function() {
       
       // Allow the client to switch the server they observe
       socket.on('switch-server', function(data) {
-        leaveServer();
+        if (data.serverId != socket.serverId) {
+          leaveServer();
         
-        socket.serverId = data.serverId;
-        api = apis[data.serverId];
-        
-        joinServer();
+          socket.serverId = data.serverId;
+          api = apis[data.serverId];
+          
+          joinServer();
+        }
       });
       
       socket.on('disconnect', function() {
