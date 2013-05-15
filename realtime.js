@@ -146,12 +146,11 @@ function removeConnectedUser(socketId) {
   }
 }
 
-exports.init = function(_config) {
+exports.init = function(_config, callback) {
   config = _config;
   
   app = http.createServer(function(req, res) {
     res.writeHead(200);
-    res.write(JSON.stringify(connectedUsers));
     res.end();
   });
   
@@ -169,19 +168,34 @@ exports.init = function(_config) {
   
   emitter = new events.EventEmitter();
   
-  for (var id in config.servers) {
-    var address = config.servers[id];
-    
-    var api = new jsonapi.JSONAPI({
-      hostname: address,
-      port: config.mcApiPort,
-      username: config.mcApiUsername,
-      password: config.mcApiPassword,
-      salt: config.mcApiSalt
-    });
-    
-    apis[id] = api;
+  var options = {
+    uri: 'http://' + config.website + '/api/v1/servers'
   }
+  
+  request(options, function(error, response, body) {
+    if (error || response.statusCode != 200) {
+      return callback(new Error("Not able to get list of servers from api!"));
+    }
+    
+    var result = JSON.parse(body);
+    
+    result.map(function(server) {
+      var id = server.id;
+      var address = server.address;
+      
+      var api = new jsonapi.JSONAPI({
+        hostname: address,
+        port: config.mcApiPort,
+        username: config.mcApiUsername,
+        password: config.mcApiPassword,
+        salt: config.mcApiSalt
+      });
+      
+      apis[id] = api;
+    });
+      
+    return callback();
+  });
 }
 
 exports.start = function() {
