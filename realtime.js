@@ -92,10 +92,15 @@ function authSocket(socket, isAdmin, callback) {
 function getPlayers(api, socket, hideIPs) {
   api.call('server_status', function(error, data) {
     if (!error) {
-      // Don't expose player IP addresses to clients
-      if (hideIPs) {
-        for (var i = 0; i < data.success.players.length; ++i) {
+      for (var i = 0; i < data.success.players.length; ++i) {
+        // Don't expose player IP addresses to clients
+        if (hideIPs) {
           delete data.success.players[i].address;
+        }
+        
+        var nickname = data.success.players[i].nickname;
+        if (nickname) {
+          data.success.players[i].nickname = ansiconvert.toHtml(data.success.players[i].nickname);
         }
       }
       
