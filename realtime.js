@@ -100,7 +100,7 @@ function getPlayers(api, socket, hideIPs) {
         
         var nickname = data.success.players[i].nickname;
         if (nickname) {
-          data.success.players[i].nickname = ansiconvert.toHtml(data.success.players[i].nickname);
+          data.success.players[i].nickname = ansiconvert.toHtml(nickname);
         }
       }
       
