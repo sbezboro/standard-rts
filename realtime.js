@@ -139,6 +139,17 @@ function addConnectedUser(socket, type) {
   return true;
 }
 
+function checkLength(text, maxlength) 
+{
+  if(text.length > maxlength) {
+    return false;
+  }
+  else
+  {
+    return true;
+  }
+} 
+
 function removeConnectedUser(socketId) {
   var i = connectedUsers.length;
   while (i--) {
@@ -407,19 +418,25 @@ exports.start = function() {
         
         if (socket.username) {
           if (data.message) {
-            data.message = data.message.substring(0, Math.min(80, data.message.length));
-            
-            var now = new Date().getTime();
-            var nextChatDelay = 500;
-            
-            if (nextChatTimes[socket.username] && now < nextChatTimes[socket.username]) {
-              socket.emit('chat-spam');
-              nextChatDelay += 2000;
+            if(checkLength(data.message, 80) == true) {                                    
+              data.message = data.message.substring(0, Math.min(80, data.message.length));
+              
+              var now = new Date().getTime();
+              var nextChatDelay = 500;
+              
+              if (nextChatTimes[socket.username] && now < nextChatTimes[socket.username]) {
+                socket.emit('chat-spam');
+                nextChatDelay += 2000;
+              } else {
+                api.call('web_chat', ['message', socket.username, data.message], function(data) {});
+              }
+              
+              nextChatTimes[socket.username] = now + nextChatDelay;
             } else {
-              api.call('web_chat', ['message', socket.username, data.message], function(data) {});
+              socket.emit('chat', {
+                line: "You've exceed the character field limit (80)."
+              });
             }
-            
-            nextChatTimes[socket.username] = now + nextChatDelay;
           }
         } else {
           socket.emit('chat', {
