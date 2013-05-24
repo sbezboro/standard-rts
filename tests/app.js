@@ -11,7 +11,7 @@ var suite = vows.describe('Realtime server').addBatch({
         topic: function() {
             realtime.init(config, this.callback);
         },
-        'The server should start': function(err) {
+        'should start': function(err) {
             assert.isUndefined(err);
             realtime.start();
         }

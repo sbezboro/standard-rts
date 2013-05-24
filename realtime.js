@@ -166,7 +166,9 @@ exports.init = function(_config, callback) {
       branch: config.rollbar.branch
     });
     
-    rollbar.handleUncaughtExceptions();
+    if (!config.debug) {
+      rollbar.handleUncaughtExceptions();
+    }
   }
   
   ansiconvert = new ansitohtml();
