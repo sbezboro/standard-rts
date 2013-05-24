@@ -159,13 +159,13 @@ exports.init = function(_config, callback) {
     res.end();
   });
   
-  rollbar.init(config.rollbar.accessToken, {
-    environment: config.rollbar.environment,
-    root: config.rollbar.root,
-    branch: config.rollbar.branch
-  });
-  
-  if (!config.debug) {
+  if (config.rollbar) {
+    rollbar.init(config.rollbar.accessToken, {
+      environment: config.rollbar.environment,
+      root: config.rollbar.root,
+      branch: config.rollbar.branch
+    });
+    
     rollbar.handleUncaughtExceptions();
   }
   
