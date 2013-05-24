@@ -1,6 +1,6 @@
 var http = require('http')
   , socketio = require('socket.io')
-  , ansitohtml = require('ansi-to-html')
+  //, ansitohtml = require('ansi-to-html')
   , request = require('request')
   , rollbar = require('rollbar')
   , events = require('events')
@@ -99,9 +99,9 @@ function getPlayers(api, socket, hideIPs) {
         }
         
         var nickname = data.success.players[i].nickname;
-        if (nickname) {
-          data.success.players[i].nickname = ansiconvert.toHtml(nickname);
-        }
+        //if (nickname) {
+          //data.success.players[i].nickname = ansiconvert.toHtml(nickname);
+        //}
       }
       
       socket.emit('player-list', {
@@ -171,7 +171,7 @@ exports.init = function(_config, callback) {
     }
   }
   
-  ansiconvert = new ansitohtml();
+  //ansiconvert = new ansitohtml();
   
   emitter = new events.EventEmitter();
   
@@ -240,10 +240,12 @@ exports.start = function() {
           }
           
           var urlpat = /(\w*\.?\w+\.[\w+]{2,3}[\/\?\w&=-]*)/;
+          var ansipat = /\x1b[^m]*m/g
           var line = data.success.line.trim().substring(11);
           
           // Convert ansi color to html
-          line = ansiconvert.toHtml(line);
+          //line = ansiconvert.toHtml(line);
+          line = line.replace(ansipat, "");
           // Linkify possible urls
           line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');
           
@@ -330,6 +332,7 @@ exports.start = function() {
           var webchatpat = /\[Web Chat\]/;
           var serverpat = /\[Server\]/;
           var forumpat = /\[Forum\]/;
+          var ansipat = /\x1b[^m]*m/g
           
           var line = data.success.line.trim().substring(26);
           
@@ -337,7 +340,8 @@ exports.start = function() {
               line.match(webchatpat) ||
               line.match(serverpat) ||
               line.match(forumpat)) {
-            line = ansiconvert.toHtml(line);
+            //line = ansiconvert.toHtml(line);
+            line = line.replace(ansipat, "");
             socket.emit('chat', {
               line: line
             });
