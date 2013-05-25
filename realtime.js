@@ -2,6 +2,7 @@ var http = require('http')
   , socketio = require('socket.io')
   //, ansitohtml = require('ansi-to-html')
   , request = require('request')
+  , htmlencode = require('htmlencode')
   , rollbar = require('rollbar')
   , events = require('events')
   , jsonapi = require('./jsonapi')
@@ -22,7 +23,14 @@ var connectedUsers = [];
 
 var emitter;
 
-  
+var chatpat = /<.*>\ /;
+var webchatpat = /\[Web Chat\]/;
+var serverpat = /\[Server\]/;
+var forumpat = /\[Forum\]/;
+
+var urlpat = /(\w*\.?\w+\.[\w+]{2,3}[\/\?\w&=-]*)/;
+var ansipat = /\x1b[^m]*m/g;
+
 /* Authenticates the socket connection request by checking the Django session
  * key with the website api.
  *
@@ -239,15 +247,15 @@ exports.start = function() {
             lastError = null;
           }
           
-          var urlpat = /(\w*\.?\w+\.[\w+]{2,3}[\/\?\w&=-]*)/;
-          var ansipat = /\x1b[^m]*m/g
           var line = data.success.line.trim().substring(11);
           
           // Convert ansi color to html
           //line = ansiconvert.toHtml(line);
           line = line.replace(ansipat, "");
+          
+          line = htmlencode.htmlEncode(line);
           // Linkify possible urls
-          line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');
+          //line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');
           
           socket.emit('console', {
             line: line
@@ -328,12 +336,6 @@ exports.start = function() {
             lastError = null;
           }
           
-          var chatpat = /<.*>\ /;
-          var webchatpat = /\[Web Chat\]/;
-          var serverpat = /\[Server\]/;
-          var forumpat = /\[Forum\]/;
-          var ansipat = /\x1b[^m]*m/g
-          
           var line = data.success.line.trim().substring(26);
           
           if (line.match(chatpat) ||
@@ -342,6 +344,8 @@ exports.start = function() {
               line.match(forumpat)) {
             //line = ansiconvert.toHtml(line);
             line = line.replace(ansipat, "");
+          
+            line = htmlencode.htmlEncode(line);
             socket.emit('chat', {
               line: line
             });

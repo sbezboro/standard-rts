@@ -11,6 +11,7 @@
     "ansi-to-html": "~0.1.1",
     "request": "~2.16.6",
     "rollbar": "~0.2.2",
-    "vows": "~0.7.0"
+    "vows": "~0.7.0",
+    "htmlencode": "0.0.3"
   }
 }
