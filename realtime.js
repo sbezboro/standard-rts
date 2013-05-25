@@ -1,12 +1,12 @@
 var http = require('http')
   , socketio = require('socket.io')
-  //, ansitohtml = require('ansi-to-html')
+  , ansitohtml = require('ansi-to-html')
   , request = require('request')
-  , htmlencode = require('htmlencode')
   , rollbar = require('rollbar')
   , events = require('events')
   , jsonapi = require('./jsonapi')
-  , streams = require('./streams');
+  , streams = require('./streams')
+  , util = require('./util');
 
 var app = null;
 var io = null;
@@ -107,9 +107,6 @@ function getPlayers(api, socket, hideIPs) {
         }
         
         var nickname = data.success.players[i].nickname;
-        //if (nickname) {
-          //data.success.players[i].nickname = ansiconvert.toHtml(nickname);
-        //}
       }
       
       socket.emit('player-list', {
@@ -179,7 +176,7 @@ exports.init = function(_config, callback) {
     }
   }
   
-  //ansiconvert = new ansitohtml();
+  ansiconvert = new ansitohtml();
   
   emitter = new events.EventEmitter();
   
@@ -249,13 +246,14 @@ exports.start = function() {
           
           var line = data.success.line.trim().substring(11);
           
-          // Convert ansi color to html
-          //line = ansiconvert.toHtml(line);
-          line = line.replace(ansipat, "");
+          // Encode '<' and '>'
+          line = util.htmlEncode(line);
           
-          line = htmlencode.htmlEncode(line);
+          // Convert ansi color to html
+          line = ansiconvert.toHtml(line);
+          
           // Linkify possible urls
-          //line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');
+          line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');
           
           socket.emit('console', {
             line: line
@@ -342,10 +340,11 @@ exports.start = function() {
               line.match(webchatpat) ||
               line.match(serverpat) ||
               line.match(forumpat)) {
-            //line = ansiconvert.toHtml(line);
-            line = line.replace(ansipat, "");
-          
-            line = htmlencode.htmlEncode(line);
+            // Encode '<' and '>'
+            line = util.htmlEncode(line);
+            
+            line = ansiconvert.toHtml(line);
+            
             socket.emit('chat', {
               line: line
             });
