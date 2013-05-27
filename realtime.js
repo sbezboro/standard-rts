@@ -386,7 +386,10 @@ exports.start = function() {
         }
         
         if (uniqueConnection && socket.username && !socket.blocked) {
-          api.call('web_chat', ['enter', socket.username]);
+          api.call('web_chat', {
+            type: 'enter',
+            username: socket.username
+          });
         }
     
         addStreamListeners();
@@ -401,7 +404,10 @@ exports.start = function() {
         streams.removeListeners(socket.id);
         
         if (uniqueConnection && socket.username && !socket.blocked) {
-          api.call('web_chat', ['exit', socket.username]);
+          api.call('web_chat', {
+            type: 'exit',
+            username: socket.username
+          });
         }
       }
       
@@ -425,7 +431,11 @@ exports.start = function() {
               socket.emit('chat-spam');
               nextChatDelay += 2000;
             } else {
-              api.call('web_chat', ['message', socket.username, data.message], function(data) {});
+              api.call('web_chat', {
+                type: 'message',
+                username: socket.username,
+                message: data.message
+              }, function(data) {});
             }
             
             nextChatTimes[socket.username] = now + nextChatDelay;
