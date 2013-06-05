@@ -97,22 +97,28 @@ function authSocket(socket, isAdmin, callback) {
   });
 }
 
-function getPlayers(api, socket, hideIPs) {
+function getStatus(api, socket, showIPs) {
   api.call('server_status', function(error, data) {
-    if (!error) {
+    if (!error && data.success) {
       for (var i = 0; i < data.success.players.length; ++i) {
         // Don't expose player IP addresses to clients
-        if (hideIPs) {
+        if (!showIPs) {
           delete data.success.players[i].address;
         }
-        
-        var nickname = data.success.players[i].nickname;
       }
       
-      socket.emit('player-list', {
+      delete data.success.banned_players;
+      
+      socket.emit('server-status', {
         players: data.success.players,
         numPlayers: data.success.numplayers,
-        maxPlayers: data.success.maxplayers
+        maxPlayers: data.success.maxplayers,
+        cpuLoad: data.success.cpu_load,
+        tps: data.success.tps,
+        totalMemory: data.success.total_memory,
+        freeMemory: data.success.free_memory,
+        totalSpace: data.success.total_space,
+        freeSpace: data.success.free_space
       });
     }
   });
@@ -231,45 +237,42 @@ exports.start = function() {
       
       addConnectedUser(socket, 'console');
       
-      function addStreamListeners() {
-        var lastError;
-        streams.addListener(socket.id, socket.serverId, 'console', function(error, data) {
-          if (error) {
-            if (!lastError) {
-              lastError = error;
-              socket.emit('mc-connection-lost');
-            }
-            return;
-          } else {
-            lastError = null;
+      var lastError;
+      streams.addListener(socket.id, socket.serverId, 'console', function(error, data) {
+        if (error) {
+          if (!lastError) {
+            lastError = error;
+            socket.emit('mc-connection-lost');
           }
-          
-          var line = data.success.line.trim().substring(11);
-          
-          // Encode '<' and '>'
-          line = util.htmlEncode(line);
-          
-          // Convert ansi color to html
-          line = ansiconvert.toHtml(line);
-          
-          // Linkify possible urls
-          line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');
-          
-          socket.emit('console', {
-            line: line
-          });
-        });
-      
-        streams.addListener(socket.id, socket.serverId, 'connections', function(error, data) {
-          if (!error) {
-            getPlayers(api, socket);
+          return;
+        } else {
+          if (lastError) {
+            socket.emit('mc-connection-restored');
           }
+          lastError = null;
+        }
+        
+        var line = data.success.line.trim().substring(11);
+        
+        // Encode '<' and '>'
+        line = util.htmlEncode(line);
+        
+        // Convert ansi color to html
+        line = ansiconvert.toHtml(line);
+        
+        // Linkify possible urls
+        line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');
+        
+        socket.emit('console', {
+          line: line
         });
+      });
       
-        getPlayers(api, socket);
-      }
+      getStatus(api, socket, true);
       
-      addStreamListeners();
+      var statusInterval = setInterval(function() {
+        getStatus(api, socket, true);
+      }, 1000);
       
       socket.on('console-input', function(data) {
         if (data.message) {
@@ -289,21 +292,10 @@ exports.start = function() {
         });
       });
       
-      // Allow the client to switch the server they observe
-      socket.on('switch-server', function(data) {
-        if (data.serverId != socket.serverId) {
-          streams.removeListeners(socket.id);
-        
-          socket.serverId = data.serverId;
-          api = apis[data.serverId];
-          
-          addStreamListeners();
-        }
-      });
-      
       socket.on('disconnect', function() {
         streams.removeListeners(socket.id);
         removeConnectedUser(socket.id);
+        clearInterval(statusInterval);
       });
     });
   });
@@ -331,6 +323,9 @@ exports.start = function() {
             }
             return;
           } else {
+            if (lastError) {
+              socket.emit('mc-connection-restored');
+            }
             lastError = null;
           }
           
@@ -353,7 +348,7 @@ exports.start = function() {
         
         streams.addListener(socket.id, socket.serverId, 'connections', function(error, data) {
           if (!error) {
-            getPlayers(api, socket, true);
+            getStatus(api, socket);
             
             if (config.hiddenUsers && config.hiddenUsers.indexOf(data.success.player) != -1) {
               return;
@@ -367,7 +362,7 @@ exports.start = function() {
           }
         });
         
-        getPlayers(api, socket, true);
+        getStatus(api, socket);
       }
       
       // Set up streams and announce to the server that this user has

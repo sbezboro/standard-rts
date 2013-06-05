@@ -159,15 +159,16 @@ JSONAPI = (function() {
             return tagStarter;
         }
         
-        function _startConnection(url, callback) {
+        function _startConnection(url, callback, isCall) {
             var socket = net.connect(_this.port + 1, _this.hostname);
             var receivedData = "";
-
-            socket.on('error', function() {
-                if (callback) {
-                    callback(new Error());
-                }
-            });
+            
+            if (isCall) {
+                socket.setTimeout(1000, function() {
+                    callback = null;
+                    socket.end();
+                });
+            }
             
             socket.on('data', function(data) {
                 if(_this.usingWebSocket) data = data.data;
@@ -202,11 +203,17 @@ JSONAPI = (function() {
                 });
             });
             
+            socket.on('error', function() {
+                if (callback) {
+                    callback(new Error());
+                }
+            });
+            
             socket.on('end', function() {
                 if (callback) {
                     callback(new Error());
                 }
-            })
+            });
             
             if (_this.usingWebSocket) {
                 socket.send(url);
@@ -231,7 +238,7 @@ JSONAPI = (function() {
             var tag = makeTag();
             var url = makeURL(method, args, tag);
             
-            _startConnection(url, callback);
+            _startConnection(url, callback, true);
         }
 
         this.stream = function(streamName, sendOld, callback) {
