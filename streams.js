@@ -31,10 +31,12 @@ function startStream(id, source) {
       }
       
       listeners.map(function(listener) {
-        listener.callback(null, data);
+        listener.callback(null, {
+          one: data.success
+        });
       });
       
-      log[id][source].push(data);
+      log[id][source].push(data.success.line);
       if (log[id][source].length > LOG_LENGTH) {
         log[id][source].shift();
       }
@@ -64,9 +66,10 @@ exports.addListener = function(socketId, serverId, source, callback) {
   });
   
   if (source != 'connections') {
-    log[serverId][source].map(function(data) {
-      callback(null, data);
-    });
+    var batch = log[serverId][source].slice(0);
+    callback(null, {
+      'batch': batch
+    })
   }
 }
 
