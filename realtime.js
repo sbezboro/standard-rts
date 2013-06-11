@@ -85,7 +85,7 @@ exports.addConnectedUser = function(socket, type) {
   var user = {
     socketId: socket.id,
     connectionTime: Math.floor(new Date().getTime() / 1000),
-    address: socket.handshake.address.address,
+    address: socket.handshake.headers['x-real-ip'] || socket.handshake.address.address,
     type: type
   };
   
