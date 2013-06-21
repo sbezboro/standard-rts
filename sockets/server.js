@@ -16,12 +16,8 @@ exports.getStatus = function(api, socket, showIPs) {
         players: data.players,
         numPlayers: data.numplayers,
         maxPlayers: data.maxplayers,
-        cpuLoad: data.cpu_load,
-        tps: data.tps,
-        totalMemory: data.total_memory,
-        freeMemory: data.free_memory,
-        totalSpace: data.total_space,
-        freeSpace: data.free_space
+        load: data.load,
+        tps: data.tps
       });
     }
   });

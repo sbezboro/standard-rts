@@ -44,7 +44,7 @@ exports.start = function(io, apis) {
         socket.emit('chat-users', {
           users: realtime.connectedUsers
         });
-      }, 1000);
+      }, 5000);
       
       socket.on('console-input', function(data) {
         if (data.message) {
