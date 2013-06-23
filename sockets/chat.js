@@ -52,10 +52,10 @@ exports.start = function(io, apis) {
           // Encode '<' and '>'
           line = util.htmlEncode(line);
           
+          line = util.ansiConvert.toHtml(line);
+          
           // Strip out bold tags
           line = line.replace(boldPat, '');
-          
-          line = util.ansiConvert.toHtml(line);
           
           return line;
         });
