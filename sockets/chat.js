@@ -10,6 +10,8 @@ var chatRegexPats = [
   /\[Forum\]/
 ];
 
+var boldPat = /\<\/?b\>/g;
+
 var patMatch = function(line) {
   for (var i = 0; i < chatRegexPats.length; ++i) {
     if (line.match(chatRegexPats[i])) {
@@ -49,6 +51,9 @@ exports.start = function(io, apis) {
           
           // Encode '<' and '>'
           line = util.htmlEncode(line);
+          
+          // Strip out bold tags
+          line = line.replace(boldPat, '');
           
           line = util.ansiConvert.toHtml(line);
           
