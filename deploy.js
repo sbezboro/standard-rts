@@ -2,7 +2,7 @@ var request = require('request');
 var exec = require('child_process').exec;
 var config = require('./config');
 
-var nodeHost = '198.144.185.231'
+var nodeHost = '64.31.24.18'
 
 
 function rollbarRecordDeploy(accessToken, username, revision) {
