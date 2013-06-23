@@ -58,11 +58,13 @@ exports.authSocket = function(socket, isAdmin, callback) {
     
     request(options, function(error, response, body) {
       if (error) {
+        console.log("Auth request error: " + error);
         socket.disconnect();
-        return callback(new Error());
+        return callback(error);
       }
       
       if (response.statusCode != 200) {
+        console.log('Bad auth status code: ' + response.statusCode);
         socket.emit('unauthorized');
         socket.disconnect();
         return callback(new Error());

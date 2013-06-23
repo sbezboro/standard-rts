@@ -1,6 +1,8 @@
 exports.getStatus = function(api, socket, showIPs) {
   api.call('server_status', function(error, data) {
-    if (!error && data.success) {
+    if (error) {
+      console.log('Error calling api: ' + error);
+    } else if (data.success) {
       data = data.success;
       
       for (var i = 0; i < data.players.length; ++i) {
