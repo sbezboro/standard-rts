@@ -84,10 +84,15 @@ exports.authSocket = function(socket, isAdmin, callback) {
 };
 
 exports.addConnectedUser = function(socket, type) {
+  var address = 'unknown';
+  if (socket.handshake) {
+    address = socket.handshake.headers['x-real-ip'] || socket.handshake.address.address;
+  }
+  
   var user = {
     socketId: socket.id,
     connectionTime: Math.floor(new Date().getTime() / 1000),
-    address: socket.handshake.headers['x-real-ip'] || socket.handshake.address.address,
+    address: address,
     type: type
   };
   
