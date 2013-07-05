@@ -1,3 +1,5 @@
+var util = require('../util');
+
 exports.getStatus = function(api, socket, showIPs) {
   api.call('server_status', function(error, data) {
     if (error) {
@@ -9,6 +11,11 @@ exports.getStatus = function(api, socket, showIPs) {
         // Don't expose player IP addresses to clients
         if (!showIPs) {
           delete data.players[i].address;
+        }
+        
+        var nicknameAnsi = data.players[i].nickname_ansi;
+        if (nicknameAnsi) {
+          data.players[i].nicknameAnsi = util.ansiConvert.toHtml(nicknameAnsi);
         }
       }
       
