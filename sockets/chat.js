@@ -3,12 +3,16 @@ var server = require('./server')
   , realtime = require('../realtime')
   , util = require('../util');
 
+var chatRegexStripPat = /\[\/wc\/\] /;
+
 var chatRegexPats = [
   /<.*>\ /,
   /\[Web Chat\]/,
   /\[Server\]/,
-  /\[Forum\]/
+  /\[Forum\]/,
+  chatRegexStripPat
 ];
+
 
 var boldPat = /\<\/?b\>/g;
 
@@ -47,6 +51,8 @@ exports.start = function(io, apis) {
             return null;
           }
           
+          line = line.replace(chatRegexStripPat, '');
+          
           line = line.trim().substring(26);
           
           // Encode '<' and '>'
@@ -64,12 +70,6 @@ exports.start = function(io, apis) {
       streams.addListener(socket.id, socket.serverId, 'connections', function(error, data) {
         if (!error) {
           server.getStatus(api, socket);
-          
-          var line = '<span style="color:#A50">' + data.one.player + " " + data.one.action + '</span>';
-          
-          socket.emit('chat', {
-            line: line
-          });
         }
       });
       

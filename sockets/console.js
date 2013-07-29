@@ -3,7 +3,7 @@ var server = require('./server')
   , realtime = require('../realtime')
   , util = require('../util');
 
-var urlpat = /(\w*\.?\w+\.[\w+]{2,3}[\/\?\w&=-]*)/;
+var urlpat = /(\w*\.?\w+\.[\w+]{2,3}[\.\/\?\w&=\-]*)/;
 var boldPat = /\<\/?b\>/g;
 
 exports.start = function(io, apis) {
