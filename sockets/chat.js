@@ -3,16 +3,15 @@ var server = require('./server')
   , realtime = require('../realtime')
   , util = require('../util');
 
-var chatRegexStripPat = /\[\/wc\/\] /;
+var chatRegexStripPat = /\[\*WC\*\]/;
+var consoleChatRegexStripPat = /\[\*CWC\*\]/;
 
 var chatRegexPats = [
   /<.*>\ /,
-  /\[Web Chat\]/,
   /\[Server\]/,
-  /\[Forum\]/,
-  chatRegexStripPat
+  chatRegexStripPat,
+  consoleChatRegexStripPat
 ];
-
 
 var boldPat = /\<\/?b\>/g;
 
@@ -52,6 +51,7 @@ exports.start = function(io, apis) {
           }
           
           line = line.replace(chatRegexStripPat, '');
+          line = line.replace(consoleChatRegexStripPat, '');
           
           line = line.trim().substring(26);
           

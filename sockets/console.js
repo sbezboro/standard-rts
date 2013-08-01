@@ -3,6 +3,9 @@ var server = require('./server')
   , realtime = require('../realtime')
   , util = require('../util');
 
+var chatRegexPat = /\[\*WC\*\]/;
+var consoleChatRegexStripPat = /\[\*CWC\*\]/;
+
 var urlpat = /(\w*\.?\w+\.[\w+]{2,3}[\.\/\?\w&=\-]*)/;
 var boldPat = /\<\/?b\>/g;
 
@@ -23,6 +26,12 @@ exports.start = function(io, apis) {
       var lastError;
       streams.addListener(socket.id, socket.serverId, 'console', function(error, data) {
         server.handleStreamData(error, data, socket, 'console', lastError, function(line) {
+          if (line.match(chatRegexPat)) {
+            return null;
+          }
+          
+          line = line.replace(consoleChatRegexStripPat, '');
+          
           line = line.trim().substring(11);
           
           // Encode '<' and '>'
