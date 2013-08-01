@@ -1,7 +1,7 @@
 var ansitohtml = require('ansi-to-html');
 
 exports.htmlEncode = function(text) {
-    return text.replace('<', '&lt;').replace('>', '&gt;').replace('/', '&#47;');
+    return text.replace('<', '&lt;').replace('>', '&gt;');
 }
 
 var ansiConvert = new ansitohtml();
