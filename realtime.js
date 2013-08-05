@@ -131,6 +131,21 @@ exports.init = function(_config, callback) {
   
   app = http.createServer(function(req, res) {
     res.writeHead(200);
+    
+    if (req.url.indexOf("/users", req.url.length - 6) !== -1) {
+      var user;
+      var result = [];
+      connectedUsers.map(function(user) {
+        if (user.type == 'chat') {
+          result.push({
+            username: user.username
+          });
+        }
+      });
+      
+      res.write(JSON.stringify(result));
+    }
+    
     res.end();
   });
   
