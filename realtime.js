@@ -130,7 +130,6 @@ exports.init = function(_config, callback) {
   config = _config;
   
   app = http.createServer(function(req, res) {
-    res.writeHead(200);
     
     if (req.url.indexOf("/users", req.url.length - 6) !== -1) {
       var user;
@@ -143,7 +142,16 @@ exports.init = function(_config, callback) {
         }
       });
       
-      res.write(JSON.stringify(result));
+      
+      res.writeHead(200, {
+        'Content-Type': 'application/json'
+      });
+      
+      res.write(JSON.stringify({
+        users: result
+      }));
+    } else {
+      res.writeHead(200);
     }
     
     res.end();
