@@ -135,7 +135,7 @@ exports.init = function(_config, callback) {
       var user;
       var result = [];
       connectedUsers.map(function(user) {
-        if (user.type == 'chat') {
+        if (user.type == 'chat' && user.username) {
           result.push({
             username: user.username
           });
