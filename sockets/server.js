@@ -11,6 +11,7 @@ exports.getStatus = function(api, socket, allData) {
         // Don't expose sensetive player data to clients
         if (!allData) {
           delete data.players[i].address;
+          delete data.players[i].world;
           delete data.players[i].x;
           delete data.players[i].y;
           delete data.players[i].z;

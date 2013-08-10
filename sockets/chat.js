@@ -148,10 +148,20 @@ exports.start = function(io, apis) {
         }
       });
       
+      socket.on('user-activity', function (data) {
+        if (socket.blocked) {
+          return;
+        }
+        
+        if (socket.user) {
+          socket.user.active = data.active;
+        }
+      });
+      
       socket.on('disconnect', function() {
         leaveServer();
         if (uniqueConnection) {
-          realtime.removeConnectedUser(socket.id);
+          realtime.removeConnectedUser(socket);
         }
       });
     });

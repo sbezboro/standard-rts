@@ -71,11 +71,11 @@ exports.start = function(io, apis) {
         apis.map(function(api) {
           api.call('runConsoleCommand', 'permissions player addgroup ' + data.username + ' donator');
         });
-      })
+      });
       
       socket.on('disconnect', function() {
         streams.removeListeners(socket.id);
-        realtime.removeConnectedUser(socket.id);
+        realtime.removeConnectedUser(socket);
         clearInterval(statusInterval);
       });
     });

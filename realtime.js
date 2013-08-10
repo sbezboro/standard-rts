@@ -90,10 +90,10 @@ exports.addConnectedUser = function(socket, type) {
   }
   
   var user = {
-    socketId: socket.id,
     connectionTime: Math.floor(new Date().getTime() / 1000),
     address: address,
-    type: type
+    type: type,
+    active: true
   };
   
   if (socket.userId && socket.username) {
@@ -109,17 +109,20 @@ exports.addConnectedUser = function(socket, type) {
     }
   }
   
+  socket.user = user;
+  
   connectedUsers.push(user);
   
   return true;
 }
 
-exports.removeConnectedUser = function(socketId) {
+exports.removeConnectedUser = function(socket) {
   var i = connectedUsers.length;
   while (i--) {
     var existingUser = connectedUsers[i];
     
-    if (existingUser.socketId == socketId) {
+    if (socket.user == existingUser) {
+      socket.user = undefined;
       connectedUsers.splice(i, 1);
       return;
     }
@@ -130,7 +133,6 @@ exports.init = function(_config, callback) {
   config = _config;
   
   app = http.createServer(function(req, res) {
-    
     if (req.url.indexOf("/users", req.url.length - 6) !== -1) {
       var user;
       var result = [];
@@ -141,7 +143,6 @@ exports.init = function(_config, callback) {
           });
         }
       });
-      
       
       res.writeHead(200, {
         'Content-Type': 'application/json'
