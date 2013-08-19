@@ -1,7 +1,8 @@
 var server = require('./server')
   , streams = require('../streams')
   , realtime = require('../realtime')
-  , util = require('../util');
+  , util = require('../util')
+  , constants = require('../constants');
 
 var chatRegexStripPat = /\[\*WC\*\]/;
 var consoleChatRegexStripPat = /\[\*CWC\*\]/;
@@ -136,7 +137,14 @@ exports.start = function(io, apis) {
                 type: 'message',
                 username: socket.username,
                 message: data.message
-              }, function(data) {});
+              }, function(error, data) {
+                data = data.success;
+                if (data && data.result == constants.API_CALL_RESULTS['BANNED']) {
+                  socket.emit('chat', {
+                    line: "Whoops, looks like you are banned on the server! You won't be able to send any messages."
+                  });
+                }
+              });
             }
             
             nextChatTimes[socket.username] = now + nextChatDelay;

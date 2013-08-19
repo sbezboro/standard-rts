@@ -5,7 +5,7 @@ exports.getStatus = function(api, socket, allData) {
     if (error) {
       console.log('Error calling api: ' + error);
     } else if (data.success) {
-      data = data.success;
+      data = data.success.data;
       
       for (var i = 0; i < data.players.length; ++i) {
         // Don't expose sensetive player data to clients
