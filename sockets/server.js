@@ -7,6 +7,11 @@ exports.getStatus = function(api, socket, allData) {
     } else if (data.success) {
       data = data.success.data;
       
+      if (!data) {
+        console.log('Undefined player data returned!');
+        return;
+      }
+      
       for (var i = 0; i < data.players.length; ++i) {
         // Don't expose sensetive player data to clients
         if (!allData) {
