@@ -14,6 +14,7 @@ var chatRegexPats = [
   consoleChatRegexStripPat
 ];
 
+var urlpat = /(\w*\.?\w+\.[\w+]{2,3}[\.\/\?\w&=\-]*)/;
 var boldPat = /\<\/?b\>/g;
 
 var patMatch = function(line) {
@@ -63,6 +64,9 @@ exports.start = function(io, apis) {
           
           // Strip out bold tags
           line = line.replace(boldPat, '');
+          
+          // Linkify possible urls
+          line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');
           
           return line;
         });
