@@ -9,7 +9,7 @@ var consoleChatRegexStripPat = /\[\*CWC\*\]/;
 
 var chatRegexPats = [
   /<.*>\ /,
-  /\[Server\]/,
+  /\[Server/,
   chatRegexStripPat,
   consoleChatRegexStripPat
 ];
