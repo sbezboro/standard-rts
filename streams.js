@@ -17,9 +17,11 @@ function startStream(id, source) {
     var listeners = streamListeners[id][source];
     
     if (error) {
-      listeners.map(function(listener) {
+      var i;
+      for (i = 0; i < listeners.length; ++i) {
+        var listener = listeners[i];
         listener.callback(error);
-      });
+      }
       
       console.log("Stream error for source '" + source + "' and server id " + id + ", retrying in 2 seconds");
       setTimeout(function() {
@@ -30,11 +32,13 @@ function startStream(id, source) {
         return;
       }
       
-      listeners.map(function(listener) {
+      var i;
+      for (i = 0; i < listeners.length; ++i) {
+        var listener = listeners[i];
         listener.callback(null, {
           one: data.success
         });
-      });
+      }
       
       log[id][source].push(data.success.line);
       if (log[id][source].length > LOG_LENGTH) {
@@ -50,12 +54,14 @@ exports.startStreams = function() {
     streamStart[id] = {};
     log[id] = {};
     
-    streamSources.map(function(source) {
+    var i;
+    for (i = 0; i < streamSources.length; ++i) {
+      var source = streamSources[i];
       streamListeners[id][source] = [];
       log[id][source] = [];
       
       startStream(id, source);
-    });
+    }
   }
 }
 
@@ -75,16 +81,18 @@ exports.addListener = function(socketId, serverId, source, callback) {
 
 exports.removeListeners = function(socketId) {
   for (id in realtime.apis) {
-    streamSources.map(function(source) {
+    var i;
+    for (i = 0; i < streamSources.length; ++i) {
+      var source = streamSources[i];
       var listeners = streamListeners[id][source];
       
-      var i = listeners.length;
-      while (i--) {
-        if (listeners[i].socketId == socketId) {
+      var j = listeners.length;
+      while (j--) {
+        if (listeners[j].socketId == socketId) {
           listeners.splice(i, 1);
           return;
         } 
       }
-    });
+    }
   }
 }

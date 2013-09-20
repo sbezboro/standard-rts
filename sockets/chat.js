@@ -1,4 +1,4 @@
-var server = require('./server')
+var common = require('./common')
   , streams = require('../streams')
   , realtime = require('../realtime')
   , util = require('../util')
@@ -47,7 +47,7 @@ exports.start = function(io, apis) {
       
       var lastError;
       streams.addListener(socket.id, socket.serverId, 'console', function(error, data) {
-        server.handleStreamData(error, data, socket, 'chat', lastError, function(line) {
+        common.handleStreamData(error, data, socket, 'chat', lastError, function(line) {
           if (!patMatch(line)) {
             return null;
           }
@@ -74,11 +74,11 @@ exports.start = function(io, apis) {
       
       streams.addListener(socket.id, socket.serverId, 'connections', function(error, data) {
         if (!error) {
-          server.getStatus(api, socket);
+          common.getStatus(api, socket);
         }
       });
       
-      server.getStatus(api, socket);
+      common.getStatus(api, socket);
       
       // Set up streams and announce to the server that this user has
       // joined web chat (if logged in)

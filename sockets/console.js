@@ -1,4 +1,4 @@
-var server = require('./server')
+var common = require('./common')
   , streams = require('../streams')
   , realtime = require('../realtime')
   , util = require('../util');
@@ -25,7 +25,7 @@ exports.start = function(io, apis) {
       
       var lastError;
       streams.addListener(socket.id, socket.serverId, 'console', function(error, data) {
-        server.handleStreamData(error, data, socket, 'console', lastError, function(line) {
+        common.handleStreamData(error, data, socket, 'console', lastError, function(line) {
           if (line.match(chatRegexPat)) {
             return null;
           }
@@ -50,10 +50,10 @@ exports.start = function(io, apis) {
         });
       });
       
-      server.getStatus(api, socket, true);
+      common.getStatus(api, socket, true);
       
       var statusInterval = setInterval(function() {
-        server.getStatus(api, socket, true);
+        common.getStatus(api, socket, true);
         socket.emit('chat-users', {
           users: realtime.connectedUsers
         });
@@ -68,9 +68,11 @@ exports.start = function(io, apis) {
       });
       
       socket.on('set-donator', function(data) {
-        apis.map(function(api) {
+        var i;
+        for (i = 0; i < apis.length; ++i) {
+          var api = apis[i];
           api.call('runConsoleCommand', 'permissions player addgroup ' + data.username + ' donator');
-        });
+        }
       });
       
       socket.on('disconnect', function() {

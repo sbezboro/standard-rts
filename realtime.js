@@ -136,13 +136,16 @@ exports.init = function(_config, callback) {
     if (req.url.indexOf("/users", req.url.length - 6) !== -1) {
       var user;
       var result = [];
-      connectedUsers.map(function(user) {
+      var i;
+      
+      for (i = 0; i < connectedUsers.length; ++i) {
+        var user = connectedUsers[i];
         if (user.type == 'chat' && user.username) {
           result.push({
             username: user.username
           });
         }
-      });
+      }
       
       res.writeHead(200, {
         'Content-Type': 'application/json'
@@ -181,7 +184,9 @@ exports.init = function(_config, callback) {
     
     var result = JSON.parse(body);
     
-    result.map(function(server) {
+    var i;
+    for (i = 0; i < result.length; ++i) {
+      var server = result[i];
       var id = server.id;
       var address = server.address;
       
@@ -194,7 +199,7 @@ exports.init = function(_config, callback) {
       });
       
       apis[id] = api;
-    });
+    }
       
     return callback();
   });
