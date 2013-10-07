@@ -49,6 +49,7 @@ function startStream(id, source) {
 }
 
 exports.startStreams = function() {
+  var id;
   for (id in realtime.apis) {
     streamListeners[id] = {};
     streamStart[id] = {};
@@ -80,6 +81,7 @@ exports.addListener = function(socketId, serverId, source, callback) {
 }
 
 exports.removeListeners = function(socketId) {
+  var id;
   for (id in realtime.apis) {
     var i;
     for (i = 0; i < streamSources.length; ++i) {
@@ -89,7 +91,7 @@ exports.removeListeners = function(socketId) {
       var j = listeners.length;
       while (j--) {
         if (listeners[j].socketId == socketId) {
-          listeners.splice(i, 1);
+          listeners.splice(j, 1);
           return;
         } 
       }

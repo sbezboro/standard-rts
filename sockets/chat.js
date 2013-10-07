@@ -26,7 +26,48 @@ var patMatch = function(line) {
   
   return false;
 };
-  
+
+// Set up streams and announce to the server that this user has
+// joined web chat (if logged in)
+var joinServer = function(socket, api, broadcast) {
+  var userId = socket.handshake.userId;
+  var username = socket.handshake.username;
+
+  if (userId) {
+    var now = new Date().getTime();
+    if (nextConnectionTimes[userId] && now < nextConnectionTimes[userId]) {
+      nextConnectionTimes[userId] = now + 30000;
+      socket.emit('connection-spam');
+      socket.blocked = true;
+      return false;
+    }
+
+    nextConnectionTimes[userId] = now + 1000;
+
+    if (broadcast && !socket.blocked) {
+      api.call('web_chat', {
+        type: 'enter',
+        username: username
+      });
+    }
+  }
+
+  socket.blocked = false;
+  return true;
+};
+
+// Remove streams and announce to the server that this user has
+// left web chat (if logged in)
+var leaveServer = function(socket, api, broadcast) {
+  var username = socket.handshake.username;
+  if (username && broadcast && !socket.blocked) {
+    api.call('web_chat', {
+      type: 'exit',
+      username: username
+    });
+  }
+}
+
 // Use to counter spammy users
 var nextConnectionTimes = {};
 var nextChatTimes = {};
@@ -34,19 +75,21 @@ var nextChatTimes = {};
 exports.start = function(io, apis) {
   io
   .of('/chat')
+  .authorization(function(data, callback) {
+    realtime.authorize(data, false, true, callback);
+  })
   .on('connection', function(socket) {
-    realtime.authSocket(socket, false, function(error) {
-      // Some sort of error, the socket is disconnected at this point so end
-      if (error) {
-        return;
-      }
-      
-      var api = apis[socket.serverId];
-        
-      var uniqueConnection = realtime.addConnectedUser(socket, 'chat');
+    socket.on('server', function(data) {
+      socket.removeAllListeners('server');
+
+      var serverId = data.serverId;
+      var api = apis[serverId];
+
+      var unique = realtime.addConnection(socket, 'chat');
+      joinServer(socket, api, unique);
       
       var lastError;
-      streams.addListener(socket.id, socket.serverId, 'console', function(error, data) {
+      streams.addListener(socket.id, serverId, 'console', function(error, data) {
         common.handleStreamData(error, data, socket, 'chat', lastError, function(line) {
           if (!patMatch(line)) {
             return null;
@@ -54,7 +97,8 @@ exports.start = function(io, apis) {
           
           line = line.replace(chatRegexStripPat, '');
           line = line.replace(consoleChatRegexStripPat, '');
-          
+
+          // Remove time and log level
           line = line.trim().substring(26);
           
           // Encode '<' and '>'
@@ -72,7 +116,7 @@ exports.start = function(io, apis) {
         });
       });
       
-      streams.addListener(socket.id, socket.serverId, 'connections', function(error, data) {
+      streams.addListener(socket.id, serverId, 'connections', function(error, data) {
         if (!error) {
           common.getStatus(api, socket);
         }
@@ -80,66 +124,27 @@ exports.start = function(io, apis) {
       
       common.getStatus(api, socket);
       
-      // Set up streams and announce to the server that this user has
-      // joined web chat (if logged in)
-      function joinServer() {
-        if (socket.username) {
-          var now = new Date().getTime();
-          if (nextConnectionTimes[socket.username] && now < nextConnectionTimes[socket.username]) {
-            nextConnectionTimes[socket.username] = now + 30000;
-            socket.emit('connection-spam');
-            socket.blocked = true;
-            return false;
-          }
-          
-          nextConnectionTimes[socket.username] = now + 1000;
-        }
-        
-        if (uniqueConnection && socket.username && !socket.blocked) {
-          api.call('web_chat', {
-            type: 'enter',
-            username: socket.username
-          });
-        }
-        
-        socket.blocked = false;
-        return true;
-      }
-      
-      // Remove streams and announce to the server that this user has
-      // left web chat (if logged in)
-      function leaveServer() {
-        streams.removeListeners(socket.id);
-        
-        if (uniqueConnection && socket.username && !socket.blocked) {
-          api.call('web_chat', {
-            type: 'exit',
-            username: socket.username
-          });
-        }
-      }
-      
-      joinServer();
-      
       socket.on('chat-input', function (data) {
         if (socket.blocked) {
           return;
         }
-        
-        if (socket.username) {
+
+        var userId = socket.handshake.userId;
+        var username = socket.handshake.username;
+        if (userId) {
           if (data.message) {
             data.message = data.message.substring(0, Math.min(80, data.message.length));
             
             var now = new Date().getTime();
             var nextChatDelay = 500;
             
-            if (nextChatTimes[socket.username] && now < nextChatTimes[socket.username]) {
+            if (nextChatTimes[userId] && now < nextChatTimes[userId]) {
               socket.emit('chat-spam');
               nextChatDelay += 2000;
             } else {
               api.call('web_chat', {
                 type: 'message',
-                username: socket.username,
+                username: username,
                 message: data.message
               }, function(error, data) {
                 data = data.success;
@@ -151,7 +156,7 @@ exports.start = function(io, apis) {
               });
             }
             
-            nextChatTimes[socket.username] = now + nextChatDelay;
+            nextChatTimes[userId] = now + nextChatDelay;
           }
         } else {
           socket.emit('chat', {
@@ -164,17 +169,17 @@ exports.start = function(io, apis) {
         if (socket.blocked) {
           return;
         }
-        
-        if (socket.user) {
-          socket.user.active = data.active;
-        }
+
+        var connection = realtime.connections[socket.id];
+        connection.active = data.active;
       });
       
       socket.on('disconnect', function() {
-        leaveServer();
-        if (uniqueConnection) {
-          realtime.removeConnectedUser(socket);
-        }
+        var unique = realtime.removeConnection(socket);
+
+        streams.removeListeners(socket.id);
+
+        leaveServer(socket, api, unique);
       });
     });
   });

@@ -55,9 +55,10 @@ exports.handleStreamData = function(error, data, socket, name, lastError, prepar
     }
     lastError = null;
   }
-  
+
+  var line;
   if (data.one) {
-    var line = prepareLine(data.one.line);
+    line = prepareLine(data.one.line);
     
     if (line) {
       socket.emit(name, {
@@ -67,7 +68,7 @@ exports.handleStreamData = function(error, data, socket, name, lastError, prepar
   } else if (data.batch) {
     var i = data.batch.length;
     while (i--) {
-      var line = prepareLine(data.batch[i]);
+      line = prepareLine(data.batch[i]);
       
       if (line) {
         data.batch[i] = line;

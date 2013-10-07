@@ -12,137 +12,156 @@ var app = null;
 var io = null;
 var config = null;
 var apis = [];
-  
-var connectedUsers = [];
 
-/* Authenticates the socket connection request by checking the Django session
- * key with the website api.
- *
- * If the user is logged in and their session key is valid, their user_id and
- * username will be stored in the socket and the connection will proceed.
- * 
- * If the admin parameter is set, the api will make sure the user associated
- * with the session key is an admin, otherwise the api will return a 403. */
-exports.authSocket = function(socket, isAdmin, callback) {
-  var self = this;
-  
-  socket.on('auth', function(data) {
-    // The client must provide a serverId. It must also provide djangoSessionKey
-    // if this request is for an elevated privilege socket
-    if (!data.serverId || (!data.djangoSessionKey && isAdmin)) {
-      socket.emit('unauthorized');
-      socket.disconnect();
-      return callback(new Error());
+var connections = {};
+
+var authorizeDjangoSessionKey = function(djangoSessionKey, elevated, callback) {
+  var form = {
+    'session-key': djangoSessionKey
+  };
+
+  if (elevated) {
+    form['elevated'] = true;
+  }
+
+  var options = {
+    uri: 'http://' + config.website + '/api/v1/auth_session_key',
+    method: 'POST',
+    form: form
+  };
+
+  request(options, function(error, response, body) {
+    if (error) {
+      return callback("Auth request error: " + error);
     }
-    
-    socket.serverId = data.serverId;
-    
-    // Anonymous request, just continue the socket connection without storing user data
-    if (!data.djangoSessionKey) {
-      return callback(null);
+
+    if (response.statusCode != 200) {
+      return callback('Bad auth status code: ' + response.statusCode);
     }
-    
-    var form = {
-      'session-key': data.djangoSessionKey,
-    }
-    
-    if (isAdmin) {
-      form['is-admin'] = true;
-    }
-    
-    var options = {
-      uri: 'http://' + config.website + '/api/v1/auth_session_key',
-      method: 'POST',
-      form: form
-    }
-    
-    request(options, function(error, response, body) {
-      if (error) {
-        console.log("Auth request error: " + error);
-        socket.disconnect();
-        return callback(error);
-      }
-      
-      if (response.statusCode != 200) {
-        console.log('Bad auth status code: ' + response.statusCode);
-        socket.emit('unauthorized');
-        socket.disconnect();
-        return callback(new Error());
-      }
-      
-      var result = JSON.parse(body);
-    
-      // Store the authenticated user's id and username for future use
-      socket.userId = result.user_id;
-      socket.username = result.username;
-      
-      return callback(null);
+
+    var result = JSON.parse(body);
+
+    // Successful authentication and authorization
+    return callback(null, {
+      userId: result.user_id,
+      username: result.username
     });
-    
-    return null;
   });
 };
 
-exports.addConnectedUser = function(socket, type) {
+var isUserConnected = function(username) {
+  var id;
+  for (id in connections) {
+    if (!connections.hasOwnProperty(id)) {
+      continue;
+    }
+
+    var connection = connections[id];
+    if (connection.username === username) {
+      return true;
+    }
+  }
+  return false;
+};
+
+/* Called during socket.io authorization, this function will first try to grab
+ * the Django session key stored in the request's cookies if it exists. If it
+ * does, a call will be made to the website API to authorize this key, the result
+ * of which will be used to determine if authorization should be accepted or denied.
+ *
+ * If there is no session key, the allowAnonymous param will determine if authorization
+ * should be accepted or denied. */
+exports.authorize = function(handshakeData, elevated, allowAnonymous, callback) {
+  var cookie = handshakeData.headers.cookie || '';
+
+  var match = cookie.match(/sessionid=([a-z0-9]+)/);
+
+  if (match) {
+    var sessionId = match[1];
+
+    authorizeDjangoSessionKey(sessionId, elevated, function(error, userData) {
+      if (error) {
+        console.log(error);
+        callback(null, false);
+      } else {
+        handshakeData.userId = userData.userId;
+        handshakeData.username = userData.username;
+        callback(null, true);
+      }
+
+    });
+  } else {
+    // Anonymous request
+    callback(null, allowAnonymous);
+  }
+};
+
+exports.addConnection = function(socket, type) {
   var address = 'unknown';
   if (socket.handshake) {
     address = socket.handshake.headers['x-real-ip'] || socket.handshake.address.address;
   }
-  
-  var user = {
+
+  var unique = true;
+
+  var userId = socket.handshake.userId;
+  var username = socket.handshake.username;
+
+  var connection = {
     connectionTime: Math.floor(new Date().getTime() / 1000),
     address: address,
     type: type,
+    socketId: socket.id,
     active: true
   };
-  
-  if (socket.userId && socket.username) {
-    user.id = socket.userId;
-    user.username = socket.username;
-    
-    for (var i = 0; i < connectedUsers.length; ++i) {
-      var existingUser = connectedUsers[i];
-      
-      if (existingUser.id == user.id && existingUser.type == type) {
-        return false;
-      }
-    }
-  }
-  
-  socket.user = user;
-  
-  connectedUsers.push(user);
-  
-  return true;
-}
 
-exports.removeConnectedUser = function(socket) {
-  var i = connectedUsers.length;
-  while (i--) {
-    var existingUser = connectedUsers[i];
-    
-    if (socket.user == existingUser) {
-      socket.user = undefined;
-      connectedUsers.splice(i, 1);
-      return;
-    }
+  if (userId) {
+    connection.userId = userId;
+    connection.username = username;
+
+    unique = !isUserConnected(username);
   }
-}
+
+  connections[socket.id] = connection;
+
+  return unique;
+};
+
+exports.removeConnection = function(socket) {
+  var unique = true;
+
+  var connection = connections[socket.id];
+  delete connections[socket.id];
+
+  var username = connection.username;
+  if (username) {
+    unique = !isUserConnected(username);
+  }
+
+  return unique;
+};
 
 exports.init = function(_config, callback) {
   config = _config;
   
   app = http.createServer(function(req, res) {
     if (req.url.indexOf("/users", req.url.length - 6) !== -1) {
-      var user;
+      var userMap = {};
       var result = [];
-      var i;
-      
-      for (i = 0; i < connectedUsers.length; ++i) {
-        var user = connectedUsers[i];
-        if (user.type == 'chat' && user.username) {
+
+      var id;
+      for (id in connections) {
+        if (!connections.hasOwnProperty(id)) {
+          continue;
+        }
+
+        var connection = connections[id];
+        if (connection.type == 'chat' && connection.username &&
+          !userMap[connection.username]) {
+          userMap[connection.username] = true;
+
           result.push({
-            username: user.username
+            username: connection.username
           });
         }
       }
@@ -175,7 +194,7 @@ exports.init = function(_config, callback) {
   
   var options = {
     uri: 'http://' + config.website + '/api/v1/servers'
-  }
+  };
   
   request(options, function(error, response, body) {
     if (error || response.statusCode != 200) {
@@ -203,7 +222,7 @@ exports.init = function(_config, callback) {
       
     return callback();
   });
-}
+};
 
 exports.start = function() {
   app.listen(config.port);
@@ -215,7 +234,7 @@ exports.start = function() {
   
   consoleServer.start(io, apis);
   chatServer.start(io, apis);
-}
+};
 
 exports.apis = apis;
-exports.connectedUsers = connectedUsers;
+exports.connections = connections;
