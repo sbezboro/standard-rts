@@ -74,7 +74,7 @@ var isUserConnected = function(username) {
 exports.authorize = function(handshakeData, elevated, allowAnonymous, callback) {
   var cookie = handshakeData.headers.cookie || '';
 
-  var match = cookie.match(/sessionid=([a-z0-9]+)/);
+  var match = cookie.match(/djangosessionid=([a-z0-9]+)/);
 
   if (match) {
     var sessionId = match[1];
