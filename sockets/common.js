@@ -42,18 +42,10 @@ exports.getStatus = function(api, socket, allData) {
   });
 };
 
-exports.handleStreamData = function(error, data, socket, name, lastError, prepareLine) {
+exports.handleStreamData = function(error, data, socket, name, prepareLine) {
   if (error) {
-    if (!lastError) {
-      lastError = error;
-      socket.emit('mc-connection-lost');
-    }
+    socket.emit('mc-connection-lost');
     return;
-  } else {
-    if (lastError) {
-      socket.emit('mc-connection-restored');
-    }
-    lastError = null;
   }
 
   var line;

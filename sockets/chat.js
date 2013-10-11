@@ -147,11 +147,13 @@ exports.start = function(io, apis) {
                 username: username,
                 message: data.message
               }, function(error, data) {
-                data = data.success;
-                if (data && data.result == constants.API_CALL_RESULTS['BANNED']) {
-                  socket.emit('chat', {
-                    line: "Whoops, looks like you are banned on the server! You won't be able to send any messages."
-                  });
+                if (!error) {
+                  data = data.success;
+                  if (data && data.result == constants.API_CALL_RESULTS['BANNED']) {
+                    socket.emit('chat', {
+                      line: "Whoops, looks like you are banned on the server! You won't be able to send any messages."
+                    });
+                  }
                 }
               });
             }
