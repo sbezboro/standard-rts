@@ -11,7 +11,7 @@ var http = require('http')
 var app = null;
 var io = null;
 var config = null;
-var apis = [];
+var apis = {};
 
 var connections = {};
 
@@ -209,15 +209,13 @@ exports.init = function(_config, callback) {
       var id = server.id;
       var address = server.address;
       
-      var api = new jsonapi.JSONAPI({
+      apis[id] = new jsonapi.JSONAPI({
         hostname: address,
         port: config.mcApiPort,
         username: config.mcApiUsername,
         password: config.mcApiPassword,
         salt: config.mcApiSalt
       });
-      
-      apis[id] = api;
     }
       
     return callback();
