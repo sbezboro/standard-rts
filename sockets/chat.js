@@ -87,10 +87,9 @@ exports.start = function(io, apis) {
 
       var unique = realtime.addConnection(socket, 'chat');
       joinServer(socket, api, unique);
-      
-      var lastError;
+
       streams.addListener(socket.id, serverId, 'console', function(error, data) {
-        common.handleStreamData(error, data, socket, 'chat', lastError, function(line) {
+        common.handleStreamData(error, data, socket, 'chat', function(line) {
           if (!patMatch(line)) {
             return null;
           }

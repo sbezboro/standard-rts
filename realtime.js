@@ -224,7 +224,9 @@ exports.init = function(_config, callback) {
 
 exports.start = function() {
   app.listen(config.port);
-  io = socketio.listen(app);
+  io = socketio.listen(app, {
+    'browser client minification': true
+  });
 
   io.set('log level', 1);
   

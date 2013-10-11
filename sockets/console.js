@@ -24,9 +24,8 @@ exports.start = function(io, apis) {
 
       realtime.addConnection(socket, 'console');
 
-      var lastError;
       streams.addListener(socket.id, serverId, 'console', function(error, data) {
-        common.handleStreamData(error, data, socket, 'console', lastError, function(line) {
+        common.handleStreamData(error, data, socket, 'console', function(line) {
           if (line.match(chatRegexPat)) {
             return null;
           }
