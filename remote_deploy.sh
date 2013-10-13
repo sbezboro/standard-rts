@@ -6,5 +6,4 @@ node_dir="/home/sbezboro/standard-rts"
 cd $node_dir
 git pull
 npm install
-service standard-rts stop
-service standard-rts start
+supervisorctl restart standard-rts
