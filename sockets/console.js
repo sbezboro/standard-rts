@@ -92,10 +92,11 @@ exports.start = function(io, apis) {
       });
 
       socket.on('set-donator', function(data) {
-        var i;
-        for (i = 0; i < apis.length; ++i) {
-          var api = apis[i];
-          api.call('runConsoleCommand', 'permissions player addgroup ' + data.username + ' donator');
+        var id;
+        for (id in apis) {
+          if (apis.hasOwnProperty(id)) {
+            apis[id].call('runConsoleCommand', 'permissions player addgroup ' + data.username + ' donator');
+          }
         }
       });
 

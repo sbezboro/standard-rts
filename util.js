@@ -4,5 +4,4 @@ exports.htmlEncode = function(text) {
     return text.replace('<', '&lt;').replace('>', '&gt;');
 }
 
-var ansiConvert = new ansitohtml();
-exports.ansiConvert = ansiConvert;
+exports.ansiConvert = new ansitohtml();
