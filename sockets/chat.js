@@ -135,11 +135,11 @@ exports.start = function(io, apis) {
             data.message = data.message.substring(0, Math.min(80, data.message.length));
             
             var now = new Date().getTime();
-            var nextChatDelay = 500;
+            var nextChatDelay = 600;
             
             if (nextChatTimes[userId] && now < nextChatTimes[userId]) {
               socket.emit('chat-spam');
-              nextChatDelay += 2000;
+              nextChatDelay += (0.5 * nextChatDelay) + 2000;
             } else {
               api.call('web_chat', {
                 type: 'message',
@@ -148,10 +148,17 @@ exports.start = function(io, apis) {
               }, function(error, data) {
                 if (!error) {
                   data = data.success;
-                  if (data && data.result == constants.API_CALL_RESULTS['BANNED']) {
-                    socket.emit('chat', {
-                      line: "Whoops, looks like you are banned on the server! You won't be able to send any messages."
-                    });
+
+                  if (data) {
+                    if (data.result == constants.API_CALL_RESULTS['banned']) {
+                      socket.emit('chat', {
+                        line: "Whoops, looks like you are banned on the server! You won't be able to send any messages."
+                      });
+                    } else if (data.result == constants.API_CALL_RESULTS['muted']) {
+                      socket.emit('chat', {
+                        line: "You have been muted!"
+                      });
+                    }
                   }
                 }
               });
