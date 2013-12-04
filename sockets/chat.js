@@ -8,7 +8,7 @@ var chatRegexStripPat = /\[\*WC\*\]/;
 var consoleChatRegexStripPat = /\[\*CWC\*\]/;
 
 var chatRegexPats = [
-  /<.*>\ /,
+  /(?!AllianceChat|FactionChat|issued\ server\ command)<.+>\ /,
   /\[Server/,
   chatRegexStripPat,
   consoleChatRegexStripPat
