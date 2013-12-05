@@ -12,99 +12,105 @@ var boldPat = /\<\/?b\>/g;
 exports.start = function(io, apis) {
   io
   .of('/console')
-  .authorization(function(data, callback) {
-    realtime.authorize(data, true, false, callback);
-  })
   .on('connection', function(socket) {
-    socket.on('server', function(data) {
-      socket.removeAllListeners('server');
+    socket.on('auth', function(data) {
+      socket.removeAllListeners('auth');
+      realtime.authorize(data, true, false, function(err, userId, username) {
+        if (err) {
+          socket.emit('unauthorized');
+          return;
+        }
 
-      var serverId = data.serverId;
-      var api = apis[serverId];
+        socket.userId = userId;
+        socket.username = username;
 
-      realtime.addConnection(socket, 'console');
+        var serverId = data.server_id;
+        var api = apis[serverId];
 
-      streams.addListener(socket.id, serverId, 'console', function(error, data) {
-        common.handleStreamData(error, data, socket, 'console', function(line) {
-          if (line.match(chatRegexPat)) {
-            return null;
-          }
+        realtime.addConnection(socket, 'console');
 
-          line = line.replace(consoleChatRegexStripPat, '');
+        streams.addListener(socket.id, serverId, 'console', function(error, data) {
+          common.handleStreamData(error, data, socket, 'console', function(line) {
+            if (line.match(chatRegexPat)) {
+              return null;
+            }
 
-          line = line.trim().substring(11);
+            line = line.replace(consoleChatRegexStripPat, '');
 
-          // Encode '<' and '>'
-          line = util.htmlEncode(line);
+            line = line.trim().substring(11);
 
-          // Convert ansi color to html
-          line = util.ansiConvert.toHtml(line);
+            // Encode '<' and '>'
+            line = util.htmlEncode(line);
 
-          // Strip out bold tags
-          line = line.replace(boldPat, '');
+            // Convert ansi color to html
+            line = util.ansiConvert.toHtml(line);
 
-          // Linkify possible urls
-          line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');
+            // Strip out bold tags
+            line = line.replace(boldPat, '');
 
-          return line;
+            // Linkify possible urls
+            line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');
+
+            return line;
+          });
         });
-      });
 
-      common.getStatus(api, socket, true);
-
-      var statusInterval = setInterval(function() {
         common.getStatus(api, socket, true);
 
-        var users = [];
+        var statusInterval = setInterval(function() {
+          common.getStatus(api, socket, true);
 
-        var id;
-        for (id in realtime.connections) {
-          if (!realtime.connections.hasOwnProperty(id)) {
-            continue;
+          var users = [];
+
+          var id;
+          for (id in realtime.connections) {
+            if (!realtime.connections.hasOwnProperty(id)) {
+              continue;
+            }
+
+            var connection = realtime.connections[id];
+
+            var result = {
+              type: connection.type,
+              address: connection.address,
+              active: connection.active
+            };
+
+            if (connection.username) {
+              result.username = connection.username;
+            }
+
+            users.push(result);
           }
 
-          var connection = realtime.connections[id];
+          socket.emit('chat-users', {
+            users: users
+          });
+        }, 2000);
 
-          var result = {
-            type: connection.type,
-            address: connection.address,
-            active: connection.active
-          };
-
-          if (connection.username) {
-            result.username = connection.username;
+        socket.on('console-input', function(data) {
+          if (data.message) {
+            api.call('runConsoleCommand', "say " + data.message);
+          } else if (data.command) {
+            api.call('runConsoleCommand', data.command);
           }
-
-          users.push(result);
-        }
-
-        socket.emit('chat-users', {
-          users: users
         });
-      }, 2000);
 
-      socket.on('console-input', function(data) {
-        if (data.message) {
-          api.call('runConsoleCommand', "say " + data.message);
-        } else if (data.command) {
-          api.call('runConsoleCommand', data.command);
-        }
-      });
-
-      socket.on('set-donator', function(data) {
-        var id;
-        for (id in apis) {
-          if (apis.hasOwnProperty(id)) {
-            apis[id].call('runConsoleCommand', 'permissions player addgroup ' + data.username + ' donator');
+        socket.on('set-donator', function(data) {
+          var id;
+          for (id in apis) {
+            if (apis.hasOwnProperty(id)) {
+              apis[id].call('runConsoleCommand', 'permissions player addgroup ' + data.username + ' donator');
+            }
           }
-        }
-      });
+        });
 
-      socket.on('disconnect', function() {
-        streams.removeListeners(socket.id);
-        realtime.removeConnection(socket);
-        clearInterval(statusInterval);
+        socket.on('disconnect', function() {
+          streams.removeListeners(socket.id);
+          realtime.removeConnection(socket);
+          clearInterval(statusInterval);
+        });
       });
-    })
+    });
   });
 };

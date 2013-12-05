@@ -3,6 +3,7 @@ var http = require('http')
   , request = require('request')
   , rollbar = require('rollbar')
   , events = require('events')
+  , crypto = require('crypto')
   , jsonapi = require('./jsonapi')
   , streams = require('./streams')
   , consoleServer = require('./sockets/console')
@@ -64,35 +65,27 @@ var isUserConnected = function(username) {
   return false;
 };
 
-/* Called during socket.io authorization, this function will first try to grab
- * the Django session key stored in the request's cookies if it exists. If it
- * does, a call will be made to the website API to authorize this key, the result
- * of which will be used to determine if authorization should be accepted or denied.
- *
- * If there is no session key, the allowAnonymous param will determine if authorization
- * should be accepted or denied. */
-exports.authorize = function(handshakeData, elevated, allowAnonymous, callback) {
-  var cookie = handshakeData.headers.cookie || '';
+exports.authorize = function(data, elevated, allowAnonymous, callback) {
+  if (data.auth_data && data.auth_data.token) {
+    var userId = data.auth_data.user_id;
+    var username = data.auth_data.username;
+    var isSuperuser = data.auth_data.is_superuser;
+    var token = data.auth_data.token;
 
-  var match = cookie.match(/djangosessionid=([a-z0-9]+)/);
+    var content = [userId, username, isSuperuser].join('-');
 
-  if (match) {
-    var sessionId = match[1];
+    var shasum = crypto.createHash('sha256');
+    var checkToken = shasum.update(content + config.authSecret).digest('hex');
 
-    authorizeDjangoSessionKey(sessionId, elevated, function(error, userData) {
-      if (error) {
-        console.log(error);
-        callback(null, false);
-      } else {
-        handshakeData.userId = userData.userId;
-        handshakeData.username = userData.username;
-        callback(null, true);
-      }
-
-    });
+    if (token === checkToken && (!elevated || isSuperuser)) {
+      return callback(null, userId, username);
+    } else {
+      return callback('Unauthorized');
+    }
+  } else if (allowAnonymous) {
+    return callback(null);
   } else {
-    // Anonymous request
-    callback(null, allowAnonymous);
+    return callback('Unauthorized');
   }
 };
 
@@ -104,8 +97,8 @@ exports.addConnection = function(socket, type) {
 
   var unique = true;
 
-  var userId = socket.handshake.userId;
-  var username = socket.handshake.username;
+  var userId = socket.userId;
+  var username = socket.username;
 
   var connection = {
     connectionTime: Math.floor(new Date().getTime() / 1000),

@@ -30,8 +30,8 @@ var patMatch = function(line) {
 // Set up streams and announce to the server that this user has
 // joined web chat (if logged in)
 var joinServer = function(socket, api, broadcast) {
-  var userId = socket.handshake.userId;
-  var username = socket.handshake.username;
+  var userId = socket.userId;
+  var username = socket.username;
 
   if (userId) {
     var now = new Date().getTime();
@@ -59,7 +59,7 @@ var joinServer = function(socket, api, broadcast) {
 // Remove streams and announce to the server that this user has
 // left web chat (if logged in)
 var leaveServer = function(socket, api, broadcast) {
-  var username = socket.handshake.username;
+  var username = socket.username;
   if (username && broadcast && !socket.blocked) {
     api.call('web_chat', {
       type: 'exit',
@@ -75,119 +75,125 @@ var nextChatTimes = {};
 exports.start = function(io, apis) {
   io
   .of('/chat')
-  .authorization(function(data, callback) {
-    realtime.authorize(data, false, true, callback);
-  })
   .on('connection', function(socket) {
-    socket.on('server', function(data) {
-      socket.removeAllListeners('server');
-
-      var serverId = data.serverId;
-      var api = apis[serverId];
-
-      var unique = realtime.addConnection(socket, 'chat');
-      joinServer(socket, api, unique);
-
-      streams.addListener(socket.id, serverId, 'console', function(error, data) {
-        common.handleStreamData(error, data, socket, 'chat', function(line) {
-          if (!patMatch(line)) {
-            return null;
-          }
-          
-          line = line.replace(chatRegexStripPat, '');
-          line = line.replace(consoleChatRegexStripPat, '');
-
-          // Remove time and log level
-          line = line.trim().substring(26);
-          
-          // Encode '<' and '>'
-          line = util.htmlEncode(line);
-          
-          line = util.ansiConvert.toHtml(line);
-          
-          // Strip out bold tags
-          line = line.replace(boldPat, '');
-          
-          // Linkify possible urls
-          line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');
-          
-          return line;
-        });
-      });
-      
-      streams.addListener(socket.id, serverId, 'connections', function(error, data) {
-        if (!error) {
-          common.getStatus(api, socket);
-        }
-      });
-      
-      common.getStatus(api, socket);
-      
-      socket.on('chat-input', function (data) {
-        if (socket.blocked) {
+    socket.on('auth', function(data) {
+      socket.removeAllListeners('auth');
+      realtime.authorize(data, false, true, function(err, userId, username) {
+        if (err) {
+          socket.emit('unauthorized');
           return;
         }
 
-        var userId = socket.handshake.userId;
-        var username = socket.handshake.username;
-        if (userId) {
-          if (data.message) {
-            data.message = data.message.substring(0, Math.min(80, data.message.length));
-            
-            var now = new Date().getTime();
-            var nextChatDelay = 600;
-            
-            if (nextChatTimes[userId] && now < nextChatTimes[userId]) {
-              socket.emit('chat-spam');
-              nextChatDelay += (0.5 * nextChatDelay) + 2000;
-            } else {
-              api.call('web_chat', {
-                type: 'message',
-                username: username,
-                message: data.message
-              }, function(error, data) {
-                if (!error) {
-                  data = data.success;
+        socket.userId = userId;
+        socket.username = username;
 
-                  if (data) {
-                    if (data.result == constants.API_CALL_RESULTS['banned']) {
-                      socket.emit('chat', {
-                        line: "Whoops, looks like you are banned on the server! You won't be able to send any messages."
-                      });
-                    } else if (data.result == constants.API_CALL_RESULTS['muted']) {
-                      socket.emit('chat', {
-                        line: "You have been muted!"
-                      });
+        var serverId = data.server_id;
+        var api = apis[serverId];
+
+        var unique = realtime.addConnection(socket, 'chat');
+        joinServer(socket, api, unique);
+
+        streams.addListener(socket.id, serverId, 'console', function(error, data) {
+          common.handleStreamData(error, data, socket, 'chat', function(line) {
+            if (!patMatch(line)) {
+              return null;
+            }
+
+            line = line.replace(chatRegexStripPat, '');
+            line = line.replace(consoleChatRegexStripPat, '');
+
+            // Remove time and log level
+            line = line.trim().substring(26);
+
+            // Encode '<' and '>'
+            line = util.htmlEncode(line);
+
+            line = util.ansiConvert.toHtml(line);
+
+            // Strip out bold tags
+            line = line.replace(boldPat, '');
+
+            // Linkify possible urls
+            line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');
+
+            return line;
+          });
+        });
+
+        streams.addListener(socket.id, serverId, 'connections', function(error, data) {
+          if (!error) {
+            common.getStatus(api, socket);
+          }
+        });
+
+        common.getStatus(api, socket);
+
+        socket.on('chat-input', function (data) {
+          if (socket.blocked) {
+            return;
+          }
+
+          var userId = socket.userId;
+          var username = socket.username;
+          if (userId) {
+            if (data.message) {
+              data.message = data.message.substring(0, Math.min(80, data.message.length));
+
+              var now = new Date().getTime();
+              var nextChatDelay = 600;
+
+              if (nextChatTimes[userId] && now < nextChatTimes[userId]) {
+                socket.emit('chat-spam');
+                nextChatDelay += (0.5 * nextChatDelay) + 2000;
+              } else {
+                api.call('web_chat', {
+                  type: 'message',
+                  username: username,
+                  message: data.message
+                }, function(error, data) {
+                  if (!error) {
+                    data = data.success;
+
+                    if (data) {
+                      if (data.result == constants.API_CALL_RESULTS['banned']) {
+                        socket.emit('chat', {
+                          line: "Whoops, looks like you are banned on the server! You won't be able to send any messages."
+                        });
+                      } else if (data.result == constants.API_CALL_RESULTS['muted']) {
+                        socket.emit('chat', {
+                          line: "You have been muted!"
+                        });
+                      }
                     }
                   }
-                }
-              });
+                });
+              }
+
+              nextChatTimes[userId] = now + nextChatDelay;
             }
-            
-            nextChatTimes[userId] = now + nextChatDelay;
+          } else {
+            socket.emit('chat', {
+              line: "You must log in first before you can chat!"
+            });
           }
-        } else {
-          socket.emit('chat', {
-            line: "You must log in first before you can chat!"
-          });
-        }
-      });
-      
-      socket.on('user-activity', function (data) {
-        if (socket.blocked) {
-          return;
-        }
+        });
 
-        var connection = realtime.connections[socket.id];
-        connection.active = data.active;
-      });
-      
-      socket.on('disconnect', function() {
-        var unique = realtime.removeConnection(socket);
+        socket.on('user-activity', function (data) {
+          if (socket.blocked) {
+            return;
+          }
 
-        streams.removeListeners(socket.id);
+          var connection = realtime.connections[socket.id];
+          connection.active = data.active;
+        });
 
-        leaveServer(socket, api, unique);
+        socket.on('disconnect', function() {
+          var unique = realtime.removeConnection(socket);
+
+          streams.removeListeners(socket.id);
+
+          leaveServer(socket, api, unique);
+        });
       });
     });
   });
