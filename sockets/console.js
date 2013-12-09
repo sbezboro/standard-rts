@@ -37,8 +37,6 @@ exports.start = function(io, apis) {
 
             line = line.replace(consoleChatRegexStripPat, '');
 
-            line = line.trim().substring(11);
-
             // Encode '<' and '>'
             line = util.htmlEncode(line);
 

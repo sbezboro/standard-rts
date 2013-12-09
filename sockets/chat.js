@@ -103,7 +103,7 @@ exports.start = function(io, apis) {
             line = line.replace(consoleChatRegexStripPat, '');
 
             // Remove time and log level
-            line = line.trim().substring(26);
+            line = line.trim().substring(16);
 
             // Encode '<' and '>'
             line = util.htmlEncode(line);
