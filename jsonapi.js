@@ -46,12 +46,13 @@ j.stream('console', function(json) {
 
 
 JSONAPI = (function() {
-    var util, crypto, net;
+    var util, crypto, net, request;
 
     if(typeof require != 'undefined') {
             util = require('util')
         ,   crypto = require('crypto')
         ,   net = require('net')
+        ,   request = require('request')
         ;
     }
     else {
@@ -235,10 +236,39 @@ JSONAPI = (function() {
                 args = [args];
             }
 
-            var tag = makeTag();
-            var url = makeURL(method, args, tag);
-            
-            _startConnection(url, callback, true);
+            var url;
+
+            if (typeof request === 'undefined') {
+              url = makeURL(method, args, makeTag());
+              _startConnection(url, callback, true);
+            } else {
+              url = 'http://' + _this.hostname + ':' + _this.port + '/api/2/call';
+
+              var payload = {
+                name: method,
+                key: makeKey(method),
+                username: _this.username,
+                arguments: args
+              };
+
+              var options = {
+                uri: url,
+                body: JSON.stringify(payload),
+                headers: {
+                  'Content-Type': 'application/json'
+                }
+              };
+
+              request.post(options, function(error, response, body) {
+                if (callback) {
+                  if (error) {
+                    callback(error);
+                  } else {
+                    callback(null, body);
+                  }
+                }
+              });
+            }
         }
 
         this.stream = function(streamName, sendOld, callback) {
