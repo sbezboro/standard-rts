@@ -4,10 +4,12 @@ var http = require('http')
   , rollbar = require('rollbar')
   , events = require('events')
   , crypto = require('crypto')
+  , logger = require('./logger')
   , jsonapi = require('./jsonapi')
   , streams = require('./streams')
   , consoleServer = require('./sockets/console')
-  , chatServer = require('./sockets/chat');
+  , chatServer = require('./sockets/chat')
+  , util = require('./util');
 
 var app = null;
 var io = null;
@@ -16,39 +18,7 @@ var apis = {};
 
 var connections = {};
 
-var authorizeDjangoSessionKey = function(djangoSessionKey, elevated, callback) {
-  var form = {
-    'session-key': djangoSessionKey
-  };
-
-  if (elevated) {
-    form['elevated'] = true;
-  }
-
-  var options = {
-    uri: 'http://' + config.website + '/api/v1/auth_session_key',
-    method: 'POST',
-    form: form
-  };
-
-  request(options, function(error, response, body) {
-    if (error) {
-      return callback("Auth request error: " + error);
-    }
-
-    if (response.statusCode != 200) {
-      return callback('Bad auth status code: ' + response.statusCode);
-    }
-
-    var result = JSON.parse(body);
-
-    // Successful authentication and authorization
-    return callback(null, {
-      userId: result.user_id,
-      username: result.username
-    });
-  });
-};
+var serverStatus = {};
 
 var isUserConnected = function(username) {
   var id;
@@ -63,6 +33,39 @@ var isUserConnected = function(username) {
     }
   }
   return false;
+};
+
+var initServerStatusGetter = function(serverId) {
+  var api = apis[serverId];
+
+  var getter = function() {
+    api.call('server_status', function(error, data) {
+      if (error) {
+        logger.error('Error getting server status for server ' + serverId + ': ' + error);
+      } else {
+        data = data.data;
+
+        for (var i = 0; i < data.players.length; ++i) {
+          var nicknameAnsi = data.players[i].nickname_ansi;
+          if (nicknameAnsi) {
+            data.players[i].nicknameAnsi = util.ansiConvert.toHtml(nicknameAnsi);
+          }
+        }
+
+        serverStatus[serverId] = {
+          players: data.players,
+          numPlayers: data.numplayers,
+          maxPlayers: data.maxplayers,
+          load: data.load,
+          tps: data.tps
+        };
+      }
+
+      setTimeout(getter, 1000);
+    });
+  };
+
+  getter();
 };
 
 exports.authorize = function(data, elevated, allowAnonymous, callback) {
@@ -209,6 +212,8 @@ exports.init = function(_config, callback) {
         password: config.mcApiPassword,
         salt: config.mcApiSalt
       });
+
+      initServerStatusGetter(id);
     }
       
     return callback();
@@ -231,3 +236,4 @@ exports.start = function() {
 
 exports.apis = apis;
 exports.connections = connections;
+exports.serverStatus = serverStatus;

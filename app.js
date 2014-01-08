@@ -1,4 +1,5 @@
 var realtime = require('./realtime')
+  , logger = require('./logger')
   , config = require('./config');
 
 if (process.argv.length > 2) {
@@ -8,8 +9,8 @@ if (process.argv.length > 2) {
 var main = function() {
   realtime.init(config, function(error) {
     if (error) {
-      console.log(error);
-      console.log('Retrying in 1 second');
+      logger.error(error);
+      logger.info('Retrying in 1 second');
       setTimeout(main, 1000);
       return;
     }

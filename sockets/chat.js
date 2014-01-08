@@ -120,13 +120,9 @@ exports.start = function(io, apis) {
           });
         });
 
-        streams.addListener(socket.id, serverId, 'connections', function(error, data) {
-          if (!error) {
-            common.getStatus(api, socket);
-          }
-        });
-
-        common.getStatus(api, socket);
+        var statusInterval = setInterval(function() {
+          common.sendServerStatus(socket, serverId, true);
+        }, 1000);
 
         socket.on('chat-input', function (data) {
           if (socket.blocked) {
@@ -152,18 +148,14 @@ exports.start = function(io, apis) {
                   message: data.message
                 }, function(error, data) {
                   if (!error) {
-                    data = data.success;
-
-                    if (data) {
-                      if (data.result == constants.API_CALL_RESULTS['banned']) {
-                        socket.emit('chat', {
-                          line: "Whoops, looks like you are banned on the server! You won't be able to send any messages."
-                        });
-                      } else if (data.result == constants.API_CALL_RESULTS['muted']) {
-                        socket.emit('chat', {
-                          line: "You have been muted!"
-                        });
-                      }
+                    if (data.result == constants.API_CALL_RESULTS['banned']) {
+                      socket.emit('chat', {
+                        line: "Whoops, looks like you are banned on the server! You won't be able to send any messages."
+                      });
+                    } else if (data.result == constants.API_CALL_RESULTS['muted']) {
+                      socket.emit('chat', {
+                        line: "You have been muted!"
+                      });
                     }
                   }
                 });
@@ -191,6 +183,7 @@ exports.start = function(io, apis) {
           var unique = realtime.removeConnection(socket);
 
           streams.removeListeners(socket.id);
+          clearInterval(statusInterval);
 
           leaveServer(socket, api, unique);
         });

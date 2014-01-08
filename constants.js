@@ -4,4 +4,12 @@ exports.API_CALL_RESULTS = {
   'not_handled': 2,
   'banned': 3,
   'muted': 4
-}
+};
+
+exports.PLAYER_PROPERTY_WHITELIST = [
+  'username',
+  'nickname',
+  'nickname_ansi',
+  'rank',
+  'time_spent'
+];

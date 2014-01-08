@@ -253,10 +253,7 @@ JSONAPI = (function() {
 
               var options = {
                 uri: url,
-                body: JSON.stringify(payload),
-                headers: {
-                  'Content-Type': 'application/json'
-                }
+                json: payload
               };
 
               request.post(options, function(error, response, body) {
@@ -264,7 +261,13 @@ JSONAPI = (function() {
                   if (error) {
                     callback(error);
                   } else {
-                    callback(null, body);
+                    var data = body[0];
+
+                    if (data.result === 'error') {
+                      callback(data.error.message);
+                    } else if (data.result === 'success') {
+                      callback(null, data.success);
+                    }
                   }
                 }
               });

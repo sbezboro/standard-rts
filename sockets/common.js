@@ -1,45 +1,39 @@
+var constants = require('../constants');
+var realtime = require('../realtime');
 var util = require('../util');
 
-exports.getStatus = function(api, socket, allData) {
-  api.call('server_status', function(error, data) {
-    if (error) {
-      console.log('Error calling api: ' + error);
-    } else if (data.success) {
-      data = data.success.data;
-      
-      if (!data) {
-        console.log('Undefined player data returned!');
-        return;
+exports.sendServerStatus = function(socket, serverId, redact) {
+  var serverStatus = realtime.serverStatus[serverId];
+
+  if (!serverStatus) {
+    return;
+  }
+
+  var result = serverStatus;
+
+  // Redact sensetive player info
+  if (redact) {
+    var origPlayers = serverStatus.players;
+    result.players = [];
+
+    var i;
+    var j;
+    var player;
+    var prop;
+    for (i = 0; i < origPlayers.length; ++i) {
+      player = {};
+
+      for (j = 0; j < constants.PLAYER_PROPERTY_WHITELIST.length; ++j) {
+        prop = constants.PLAYER_PROPERTY_WHITELIST[j];
+
+        player[prop] = origPlayers[i][prop];
       }
-      
-      for (var i = 0; i < data.players.length; ++i) {
-        // Don't expose sensetive player data to clients
-        if (!allData) {
-          delete data.players[i].address;
-          delete data.players[i].world;
-          delete data.players[i].x;
-          delete data.players[i].y;
-          delete data.players[i].z;
-          delete data.players[i].health;
-        }
-        
-        var nicknameAnsi = data.players[i].nickname_ansi;
-        if (nicknameAnsi) {
-          data.players[i].nicknameAnsi = util.ansiConvert.toHtml(nicknameAnsi);
-        }
-      }
-      
-      delete data.banned_players;
-      
-      socket.emit('server-status', {
-        players: data.players,
-        numPlayers: data.numplayers,
-        maxPlayers: data.maxplayers,
-        load: data.load,
-        tps: data.tps
-      });
+
+      result.players.push(player);
     }
-  });
+  }
+
+  socket.emit('server-status', result);
 };
 
 exports.handleStreamData = function(error, data, socket, name, prepareLine) {

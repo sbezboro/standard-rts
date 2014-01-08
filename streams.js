@@ -1,8 +1,9 @@
+var logger = require('./logger');
 var realtime = require('./realtime');
 
 var LOG_LENGTH = 500;
 
-var streamSources = ['console', 'connections'];
+var streamSources = ['console'];
 var streamListeners = {};
 var streamStart = {};
 
@@ -15,15 +16,17 @@ function startStream(id, source) {
   
   api.stream(source, function(error, data) {
     var listeners = streamListeners[id][source];
+
+    var i;
+    var listener;
     
     if (error) {
-      var i;
       for (i = 0; i < listeners.length; ++i) {
-        var listener = listeners[i];
+        listener = listeners[i];
         listener.callback(error);
       }
       
-      console.log("Stream error for source '" + source + "' and server id " + id + ", retrying in 2 seconds");
+      logger.error("Stream error for source '" + source + "' and server id " + id + ", retrying in 2 seconds");
       setTimeout(function() {
         startStream(id, source);
       }, 2000);
@@ -31,10 +34,9 @@ function startStream(id, source) {
       if (data.success.time < streamStart[id][source]) {
         return;
       }
-      
-      var i;
+
       for (i = 0; i < listeners.length; ++i) {
-        var listener = listeners[i];
+        listener = listeners[i];
         listener.callback(null, {
           one: data.success
         });
