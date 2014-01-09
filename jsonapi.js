@@ -253,7 +253,10 @@ JSONAPI = (function() {
 
               var options = {
                 uri: url,
-                json: payload
+                body: JSON.stringify(payload).replace(/[^A-Za-z 0-9 \.,\?""!@#\$%\^&\*\(\)-_=\+;:<>\/\\\|\}\{\[\]`~]*/g, ''),
+                headers: {
+                  'Content-Type': 'application/json'
+                }
               };
 
               request.post(options, function(error, response, body) {
@@ -261,7 +264,7 @@ JSONAPI = (function() {
                   if (error) {
                     callback(error);
                   } else {
-                    var data = body[0];
+                    var data = JSON.parse(body)[0];
 
                     if (data.result === 'error') {
                       callback(data.error.message);

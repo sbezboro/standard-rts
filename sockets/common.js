@@ -9,7 +9,15 @@ exports.sendServerStatus = function(socket, serverId, redact) {
     return;
   }
 
-  var result = serverStatus;
+  var result = {};
+
+  var prop;
+
+  for (prop in serverStatus) {
+    if (serverStatus.hasOwnProperty(prop)) {
+      result[prop] = serverStatus[prop];
+    }
+  }
 
   // Redact sensetive player info
   if (redact) {
@@ -19,7 +27,6 @@ exports.sendServerStatus = function(socket, serverId, redact) {
     var i;
     var j;
     var player;
-    var prop;
     for (i = 0; i < origPlayers.length; ++i) {
       player = {};
 
