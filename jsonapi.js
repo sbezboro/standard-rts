@@ -253,7 +253,7 @@ JSONAPI = (function() {
 
               var options = {
                 uri: url,
-                body: JSON.stringify(payload).replace(/[^A-Za-z 0-9 \.,\?""!@#\$%\^&\*\(\)-_=\+;:<>\/\\\|\}\{\[\]`~]*/g, ''),
+                body: JSON.stringify(payload).replace(/[^A-Za-z 0-9 \.,\?'""!@#\$%\^&\*\(\)-_=\+;:<>\/\\\|\}\{\[\]`~]*/g, ''),
                 headers: {
                   'Content-Type': 'application/json'
                 }
