@@ -45,20 +45,22 @@ var initServerStatusGetter = function(serverId) {
       } else {
         data = data.data;
 
-        for (var i = 0; i < data.players.length; ++i) {
-          var nicknameAnsi = data.players[i].nickname_ansi;
-          if (nicknameAnsi) {
-            data.players[i].nicknameAnsi = util.ansiConvert.toHtml(nicknameAnsi);
+        if (data && data.players) {
+          for (var i = 0; i < data.players.length; ++i) {
+            var nicknameAnsi = data.players[i].nickname_ansi;
+            if (nicknameAnsi) {
+              data.players[i].nicknameAnsi = util.ansiConvert.toHtml(nicknameAnsi);
+            }
           }
-        }
 
-        serverStatus[serverId] = {
-          players: data.players,
-          numPlayers: data.numplayers,
-          maxPlayers: data.maxplayers,
-          load: data.load,
-          tps: data.tps
-        };
+          serverStatus[serverId] = {
+            players: data.players,
+            numPlayers: data.numplayers,
+            maxPlayers: data.maxplayers,
+            load: data.load,
+            tps: data.tps
+          };
+        }
       }
 
       setTimeout(getter, 1000);
@@ -222,9 +224,7 @@ exports.init = function(_config, callback) {
 
 exports.start = function() {
   app.listen(config.port);
-  io = socketio.listen(app, {
-    'browser client minification': true
-  });
+  io = socketio.listen(app);
 
   io.set('log level', 1);
   

@@ -264,9 +264,19 @@ JSONAPI = (function() {
                   if (error) {
                     callback(error);
                   } else {
-                    var data = JSON.parse(body)[0];
+                    var data;
 
-                    if (data.result === 'error') {
+                    try {
+                      data = JSON.parse(body);
+                    } catch(e) {
+                      callback(new Error('Error parsing JSON: ' + e));
+                    }
+
+                    data = data[0];
+
+                    if (!data) {
+                      callback(new Error('Unexpected data received: ' + data))
+                    } else if (data.result === 'error') {
                       callback(data.error.message);
                     } else if (data.result === 'success') {
                       callback(null, data.success);
