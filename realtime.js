@@ -199,11 +199,11 @@ exports.init = function(_config, callback) {
       return callback(new Error("Not able to get list of servers from api!"));
     }
     
-    var result = JSON.parse(body);
+    var data = JSON.parse(body);
     
     var i;
-    for (i = 0; i < result.length; ++i) {
-      var server = result[i];
+    for (i = 0; i < data.servers.length; ++i) {
+      var server = data.servers[i];
       var id = server.id;
       var address = server.address;
       
