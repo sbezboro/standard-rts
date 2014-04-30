@@ -204,6 +204,11 @@ exports.init = function(_config, callback) {
     var i;
     for (i = 0; i < data.servers.length; ++i) {
       var server = data.servers[i];
+
+      if (!server.online) {
+        continue;
+      }
+
       var id = server.id;
       var address = server.address;
       
