@@ -84,11 +84,16 @@ exports.start = function(io, apis) {
           return;
         }
 
-        socket.userId = userId;
-        socket.username = username;
-
         var serverId = data.server_id;
         var api = apis[serverId];
+
+        if (!api) {
+          socket.emit('unauthorized');
+          return;
+        }
+
+        socket.userId = userId;
+        socket.username = username;
 
         var unique = realtime.addConnection(socket, 'chat');
         joinServer(socket, api, unique);

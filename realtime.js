@@ -40,7 +40,7 @@ var initServerStatusGetter = function(serverId) {
 
   var getter = function() {
     api.call('server_status', function(error, data) {
-      if (error) {
+      if (error || !data) {
         logger.error('Error getting server status for server ' + serverId + ': ' + error);
       } else {
         data = data.data;
