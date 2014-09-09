@@ -31,7 +31,7 @@ var patMatch = function(line) {
 // joined web chat (if logged in)
 var joinServer = function(socket, api, broadcast) {
   var userId = socket.userId;
-  var username = socket.username;
+  var uuid = socket.uuid;
 
   if (userId) {
     var now = new Date().getTime();
@@ -47,7 +47,7 @@ var joinServer = function(socket, api, broadcast) {
     if (broadcast && !socket.blocked) {
       api.call('web_chat', {
         type: 'enter',
-        username: username
+        uuid: uuid
       });
     }
   }
@@ -59,11 +59,11 @@ var joinServer = function(socket, api, broadcast) {
 // Remove streams and announce to the server that this user has
 // left web chat (if logged in)
 var leaveServer = function(socket, api, broadcast) {
-  var username = socket.username;
-  if (username && broadcast && !socket.blocked) {
+  var uuid = socket.uuid;
+  if (uuid && broadcast && !socket.blocked) {
     api.call('web_chat', {
       type: 'exit',
-      username: username
+      uuid: uuid
     });
   }
 }
@@ -78,7 +78,7 @@ exports.start = function(io, apis) {
   .on('connection', function(socket) {
     socket.on('auth', function(data) {
       socket.removeAllListeners('auth');
-      realtime.authorize(data, false, true, function(err, userId, username) {
+      realtime.authorize(data, false, true, function(err, userId, username, uuid) {
         if (err) {
           socket.emit('unauthorized');
           return;
@@ -94,6 +94,7 @@ exports.start = function(io, apis) {
 
         socket.userId = userId;
         socket.username = username;
+        socket.uuid = uuid;
 
         var unique = realtime.addConnection(socket, 'chat');
         joinServer(socket, api, unique);
@@ -135,7 +136,7 @@ exports.start = function(io, apis) {
           }
 
           var userId = socket.userId;
-          var username = socket.username;
+          var uuid = socket.uuid;
           if (userId) {
             if (data.message) {
               data.message = data.message.substring(0, Math.min(80, data.message.length));
@@ -149,7 +150,7 @@ exports.start = function(io, apis) {
               } else {
                 api.call('web_chat', {
                   type: 'message',
-                  username: username,
+                  uuid: uuid,
                   message: data.message
                 }, function(error, data) {
                   if (!error) {

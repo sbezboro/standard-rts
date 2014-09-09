@@ -74,16 +74,17 @@ exports.authorize = function(data, elevated, allowAnonymous, callback) {
   if (data.auth_data && data.auth_data.token) {
     var userId = data.auth_data.user_id;
     var username = data.auth_data.username;
+    var uuid = data.auth_data.uuid;
     var isSuperuser = data.auth_data.is_superuser;
     var token = data.auth_data.token;
 
-    var content = [userId, username, isSuperuser].join('-');
+    var content = [userId, username, uuid, isSuperuser].join('-');
 
     var shasum = crypto.createHash('sha256');
     var checkToken = shasum.update(content + config.authSecret).digest('hex');
 
     if (token === checkToken && (!elevated || isSuperuser)) {
-      return callback(null, userId, username);
+      return callback(null, userId, username, uuid);
     } else {
       return callback('Unauthorized');
     }

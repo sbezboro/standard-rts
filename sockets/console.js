@@ -15,7 +15,7 @@ exports.start = function(io, apis) {
   .on('connection', function(socket) {
     socket.on('auth', function(data) {
       socket.removeAllListeners('auth');
-      realtime.authorize(data, true, false, function(err, userId, username) {
+      realtime.authorize(data, true, false, function(err, userId, username, uuid) {
         if (err) {
           socket.emit('unauthorized');
           return;
@@ -28,9 +28,6 @@ exports.start = function(io, apis) {
           socket.emit('unauthorized');
           return;
         }
-
-        socket.userId = userId;
-        socket.username = username;
 
         realtime.addConnection(socket, 'console');
 
@@ -77,8 +74,9 @@ exports.start = function(io, apis) {
               active: connection.active
             };
 
-            if (connection.username) {
+            if (connection.username && connection.uuid) {
               result.username = connection.username;
+              result.uuid = connection.uuid;
             }
 
             users.push(result);
