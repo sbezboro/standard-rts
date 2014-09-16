@@ -105,6 +105,7 @@ exports.addConnection = function(socket, type) {
 
   var userId = socket.userId;
   var username = socket.username;
+  var uuid = socket.uuid;
 
   var connection = {
     connectionTime: Math.floor(new Date().getTime() / 1000),
@@ -117,6 +118,7 @@ exports.addConnection = function(socket, type) {
   if (userId) {
     connection.userId = userId;
     connection.username = username;
+    connection.uuid = uuid;
 
     unique = !isUserConnected(username);
   }
@@ -160,7 +162,8 @@ exports.init = function(_config, callback) {
           userMap[connection.username] = true;
 
           result.push({
-            username: connection.username
+            username: connection.username,
+            uuid: connection.uuid
           });
         }
       }
