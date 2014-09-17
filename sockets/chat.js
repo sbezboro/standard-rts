@@ -32,6 +32,7 @@ var patMatch = function(line) {
 var joinServer = function(socket, api, broadcast) {
   var userId = socket.userId;
   var uuid = socket.uuid;
+  var username = socket.username;
 
   if (userId) {
     var now = new Date().getTime();
@@ -47,7 +48,8 @@ var joinServer = function(socket, api, broadcast) {
     if (broadcast && !socket.blocked) {
       api.call('web_chat', {
         type: 'enter',
-        uuid: uuid
+        uuid: uuid,
+        username: username
       });
     }
   }
@@ -60,10 +62,13 @@ var joinServer = function(socket, api, broadcast) {
 // left web chat (if logged in)
 var leaveServer = function(socket, api, broadcast) {
   var uuid = socket.uuid;
+  var username = socket.username;
+  
   if (uuid && broadcast && !socket.blocked) {
     api.call('web_chat', {
       type: 'exit',
-      uuid: uuid
+      uuid: uuid,
+      username: username
     });
   }
 }
@@ -137,6 +142,7 @@ exports.start = function(io, apis) {
 
           var userId = socket.userId;
           var uuid = socket.uuid;
+          var username = socket.username;
           if (userId) {
             if (data.message) {
               data.message = data.message.substring(0, Math.min(80, data.message.length));
@@ -151,6 +157,7 @@ exports.start = function(io, apis) {
                 api.call('web_chat', {
                   type: 'message',
                   uuid: uuid,
+                  username: username,
                   message: data.message
                 }, function(error, data) {
                   if (!error) {
