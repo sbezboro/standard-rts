@@ -1,4 +1,6 @@
 var http = require('http')
+  , express = require('express')
+  , bodyParser = require('body-parser')
   , socketio = require('socket.io')
   , request = require('request')
   , rollbar = require('rollbar')
@@ -33,6 +35,42 @@ var isUserConnected = function(username) {
     }
   }
   return false;
+};
+
+var setupUserEndpoint = function(endpoint) {
+  io
+  .of('/' + endpoint)
+  .on('connection', function(socket) {
+    socket.on('auth', function(data) {
+      socket.removeAllListeners('auth');
+      exports.authorize(socket, data, false, false, function(err, userId, username, uuid) {
+        if (err) {
+          console.log(err);
+          return;
+        }
+
+        if (userId) {
+          socket.join(userId);
+        }
+      });
+    });
+  });
+
+  app.post('/' + endpoint, function (req, res) {
+    var secret = req.headers['x-standard-secret'];
+
+    if (secret !== config.authSecret) {
+      return res.status(403).send({
+        'err': 'Unauthorized'
+      });
+    }
+
+    var data = req.body;
+
+    io.of(endpoint).in(data.user_id).emit(data.action, data.payload);
+
+    res.send({});
+  });
 };
 
 var initServerStatusGetter = function(serverId) {
@@ -70,28 +108,35 @@ var initServerStatusGetter = function(serverId) {
   getter();
 };
 
-exports.authorize = function(data, elevated, allowAnonymous, callback) {
-  if (data.auth_data && data.auth_data.token) {
-    var userId = data.auth_data.user_id;
-    var username = data.auth_data.username;
-    var uuid = data.auth_data.uuid;
-    var isSuperuser = data.auth_data.is_superuser;
-    var token = data.auth_data.token;
+var generateAuthToken = function(content) {
+  var shasum = crypto.createHash('sha256');
+  return shasum.update(content + config.authSecret).digest('hex');
+};
+
+exports.authorize = function(socket, data, elevated, allowAnonymous, callback) {
+  var authData = data.authData;
+  if (authData && authData.token) {
+    var userId = authData.user_id;
+    var username = authData.username;
+    var uuid = authData.uuid;
+    var isSuperuser = authData.is_superuser;
+    var token = authData.token;
 
     var content = [userId, username, uuid, isSuperuser].join('-');
 
-    var shasum = crypto.createHash('sha256');
-    var checkToken = shasum.update(content + config.authSecret).digest('hex');
+    var checkToken = generateAuthToken(content);
 
     if (token === checkToken && (!elevated || isSuperuser)) {
+      socket.emit('authorized');
       return callback(null, userId, username, uuid);
     } else {
-      return callback('Unauthorized');
+      return socket.emit('unauthorized');
     }
   } else if (allowAnonymous) {
+    socket.emit('authorized');
     return callback(null);
   } else {
-    return callback('Unauthorized');
+    return socket.emit('unauthorized');
   }
 };
 
@@ -144,42 +189,35 @@ exports.removeConnection = function(socket) {
 
 exports.init = function(_config, callback) {
   config = _config;
-  
-  app = http.createServer(function(req, res) {
-    if (req.url.indexOf("/users", req.url.length - 6) !== -1) {
-      var userMap = {};
-      var result = [];
 
-      var id;
-      for (id in connections) {
-        if (!connections.hasOwnProperty(id)) {
-          continue;
-        }
+  app = express();
+  app.use(bodyParser.json());
 
-        var connection = connections[id];
-        if (connection.type == 'chat' && connection.username &&
-          !userMap[connection.username]) {
-          userMap[connection.username] = true;
+  app.get('/users', function(req, res) {
+    var userMap = {};
+    var result = [];
 
-          result.push({
-            username: connection.username,
-            uuid: connection.uuid
-          });
-        }
+    var id;
+    for (id in connections) {
+      if (!connections.hasOwnProperty(id)) {
+        continue;
       }
-      
-      res.writeHead(200, {
-        'Content-Type': 'application/json'
-      });
-      
-      res.write(JSON.stringify({
-        users: result
-      }));
-    } else {
-      res.writeHead(200);
+
+      var connection = connections[id];
+      if (connection.type == 'chat' && connection.username &&
+          !userMap[connection.username]) {
+        userMap[connection.username] = true;
+
+        result.push({
+          username: connection.username,
+          uuid: connection.uuid
+        });
+      }
     }
-    
-    res.end();
+
+    res.send({
+      users: result
+    });
   });
   
   if (config.rollbar) {
@@ -232,15 +270,15 @@ exports.init = function(_config, callback) {
 };
 
 exports.start = function() {
-  app.listen(config.port);
-  io = socketio.listen(app);
-
-  io.set('log level', 1);
+  var server = app.listen(config.port);
+  io = socketio.listen(server);
   
   streams.startStreams();
   
   consoleServer.start(io, apis);
   chatServer.start(io, apis);
+
+  setupUserEndpoint('messages');
 };
 
 exports.apis = apis;

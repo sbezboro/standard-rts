@@ -11,11 +11,13 @@
     "test": "vows --spec tests/*.js"
   },
   "dependencies": {
-    "socket.io": "~0.9.14",
+    "socket.io": "~1.2.0",
     "ansi-to-html": "~0.1.1",
     "request": "~2.16.6",
     "rollbar": "~0.2.2",
     "vows": "~0.7.0",
-    "winston": "~0.7.2"
+    "winston": "~0.7.2",
+    "express": "^4.10.2",
+    "body-parser": "^1.9.2"
   }
 }

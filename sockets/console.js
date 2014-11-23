@@ -15,13 +15,13 @@ exports.start = function(io, apis) {
   .on('connection', function(socket) {
     socket.on('auth', function(data) {
       socket.removeAllListeners('auth');
-      realtime.authorize(data, true, false, function(err, userId, username, uuid) {
+      realtime.authorize(socket, data, true, false, function(err, userId, username, uuid) {
         if (err) {
-          socket.emit('unauthorized');
+          console.log(err);
           return;
         }
 
-        var serverId = data.server_id;
+        var serverId = data.serverId;
         var api = apis[serverId];
 
         if (!api) {

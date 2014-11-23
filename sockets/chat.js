@@ -63,7 +63,7 @@ var joinServer = function(socket, api, broadcast) {
 var leaveServer = function(socket, api, broadcast) {
   var uuid = socket.uuid;
   var username = socket.username;
-  
+
   if (uuid && broadcast && !socket.blocked) {
     api.call('web_chat', {
       type: 'exit',
@@ -71,7 +71,7 @@ var leaveServer = function(socket, api, broadcast) {
       username: username
     });
   }
-}
+};
 
 // Use to counter spammy users
 var nextConnectionTimes = {};
@@ -83,13 +83,13 @@ exports.start = function(io, apis) {
   .on('connection', function(socket) {
     socket.on('auth', function(data) {
       socket.removeAllListeners('auth');
-      realtime.authorize(data, false, true, function(err, userId, username, uuid) {
+      realtime.authorize(socket, data, false, true, function(err, userId, username, uuid) {
         if (err) {
           socket.emit('unauthorized');
           return;
         }
 
-        var serverId = data.server_id;
+        var serverId = data.serverId;
         var api = apis[serverId];
 
         if (!api) {
@@ -203,4 +203,4 @@ exports.start = function(io, apis) {
       });
     });
   });
-}
+};

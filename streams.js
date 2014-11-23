@@ -53,6 +53,10 @@ function startStream(id, source) {
 exports.startStreams = function() {
   var id;
   for (id in realtime.apis) {
+    if (!realtime.apis.hasOwnProperty(id)) {
+      continue;
+    }
+
     streamListeners[id] = {};
     streamStart[id] = {};
     log[id] = {};
@@ -66,7 +70,7 @@ exports.startStreams = function() {
       startStream(id, source);
     }
   }
-}
+};
 
 exports.addListener = function(socketId, serverId, source, callback) {
   streamListeners[serverId][source].push({
@@ -80,7 +84,7 @@ exports.addListener = function(socketId, serverId, source, callback) {
       'batch': batch
     })
   }
-}
+};
 
 exports.removeListeners = function(socketId) {
   var id;
@@ -99,4 +103,4 @@ exports.removeListeners = function(socketId) {
       }
     }
   }
-}
+};
