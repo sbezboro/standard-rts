@@ -89,7 +89,7 @@ exports.start = function(io, apis) {
 
         socket.on('console-input', function(data) {
           if (data.message) {
-            api.call('runConsoleCommand', "say " + data.message);
+            api.call('server_say', {'message': data.message});
           } else if (data.command) {
             api.call('runConsoleCommand', data.command);
           }
