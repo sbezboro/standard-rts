@@ -109,8 +109,8 @@ var initServerStatusGetter = function(serverId) {
 };
 
 var generateAuthToken = function(content) {
-  var shasum = crypto.createHash('sha256');
-  return shasum.update(content + config.authSecret).digest('hex');
+  var hash = crypto.createHmac('sha256', config.authSecret);
+  return hash.update(content).digest('hex');
 };
 
 exports.authorize = function(socket, data, elevated, allowAnonymous, callback) {
