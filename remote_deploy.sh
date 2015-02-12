@@ -1,7 +1,7 @@
 #!/bin/bash
 #the following commands are run on the remote host for the deploy process
 
-node_dir="/home/sbezboro/standard-rts"
+node_dir="/home/deploy/standard-rts"
 
 cd $node_dir
 git pull
