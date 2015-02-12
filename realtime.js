@@ -279,6 +279,7 @@ exports.start = function() {
   chatServer.start(io, apis);
 
   setupUserEndpoint('messages');
+  setupUserEndpoint('notifications');
 };
 
 exports.apis = apis;
