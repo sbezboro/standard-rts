@@ -2,6 +2,7 @@ var request = require('request');
 var exec = require('child_process').exec;
 var config = require('./config');
 
+var nodeUser = 'deploy';
 var nodeHost = '209.222.7.106';
 
 
@@ -27,7 +28,7 @@ function rollbarRecordDeploy(accessToken, username, revision) {
 }
 
 // Update remote server code and restart node server
-exec("ssh " + nodeHost + " 'bash -s' < remote_deploy.sh", function(error, stdout, stderr) {
+exec("ssh " + nodeUser + '@' + nodeHost + " 'bash -s' < remote_deploy.sh", function(error, stdout, stderr) {
   if (error) {
     console.log("Deploy failed!\n" + stderr);
     return;
