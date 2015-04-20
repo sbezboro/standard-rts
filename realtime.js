@@ -77,7 +77,7 @@ var initServerStatusGetter = function(serverId) {
   var api = apis[serverId];
 
   var getter = function() {
-    api.call('server_status', function(error, data) {
+    api.call('server_status', {minimal: true}, function(error, data) {
       if (error || !data) {
         logger.error('Error getting server status for server ' + serverId + ': ' + error);
       } else {
@@ -101,7 +101,7 @@ var initServerStatusGetter = function(serverId) {
         }
       }
 
-      setTimeout(getter, 1000);
+      setTimeout(getter, 2000);
     });
   };
 
