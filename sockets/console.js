@@ -99,7 +99,7 @@ exports.start = function(io, apis) {
           var id;
           for (id in apis) {
             if (apis.hasOwnProperty(id)) {
-              apis[id].call('runConsoleCommand', 'permissions player addgroup ' + data.username + ' donator');
+              apis[id].call('runConsoleCommand', 'permissions player addgroup ' + data.uuid + ' donator');
             }
           }
         });
