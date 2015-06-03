@@ -102,7 +102,7 @@ var initServerStatusGetter = function(serverId) {
           };
 
           stats.gauge('minecraft.server.' + serverId + '.players.count', data.numplayers);
-          stats.gauge('minecraft.server.' + serverId + '.players.max', data.maxPlayers);
+          stats.gauge('minecraft.server.' + serverId + '.players.max', data.maxplayers);
           stats.gauge('minecraft.server.' + serverId + '.tps', data.tps);
         }
       }
