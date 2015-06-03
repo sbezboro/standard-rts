@@ -17,6 +17,6 @@ var main = function() {
     
     realtime.start();
   });
-}
+};
 
 main();

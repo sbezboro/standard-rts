@@ -18,6 +18,7 @@
     "vows": "~0.7.0",
     "winston": "~0.7.2",
     "express": "^4.10.2",
-    "body-parser": "^1.9.2"
+    "body-parser": "^1.9.2",
+    "node-statsd": "^0.1.1"
   }
 }
