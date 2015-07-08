@@ -3,7 +3,7 @@ var exec = require('child_process').exec;
 var config = require('./config');
 
 var nodeUser = 'deploy';
-var nodeHost = '209.222.7.106';
+var nodeHost = '192.99.148.58';
 
 
 function rollbarRecordDeploy(accessToken, username, revision) {
@@ -16,7 +16,7 @@ function rollbarRecordDeploy(accessToken, username, revision) {
       'revision': revision,
       'local_username': username,
     }
-  }
+  };
   
   request(options, function(error, response, body) {
     if (error || response.statusCode >= 400) {
