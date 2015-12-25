@@ -15,7 +15,7 @@ exports.start = function(io, apis) {
   .on('connection', function(socket) {
     socket.on('auth', function(data) {
       socket.removeAllListeners('auth');
-      realtime.authorize(socket, data, true, false, function(err, userId, username, uuid) {
+      realtime.authorize(socket, data, true, false, function(err, userId, username, uuid, isSuperuser, isModerator) {
         if (err) {
           console.log(err);
           return;

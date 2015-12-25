@@ -45,7 +45,7 @@ var setupUserEndpoint = function(endpoint) {
   .on('connection', function(socket) {
     socket.on('auth', function(data) {
       socket.removeAllListeners('auth');
-      exports.authorize(socket, data, false, false, function(err, userId, username, uuid) {
+      exports.authorize(socket, data, false, false, function(err, userId, username, uuid, isSuperuser, isModerator) {
         if (err) {
           console.log(err);
           return;
@@ -126,15 +126,16 @@ exports.authorize = function(socket, data, elevated, allowAnonymous, callback) {
     var username = authData.username;
     var uuid = authData.uuid;
     var isSuperuser = authData.is_superuser;
+    var isModerator = authData.is_moderator;
     var token = authData.token;
 
-    var content = [userId, username, uuid, isSuperuser].join('-');
+    var content = [userId, username, uuid, isSuperuser, isModerator].join('-');
 
     var checkToken = generateAuthToken(content);
 
     if (token === checkToken && (!elevated || isSuperuser)) {
       socket.emit('authorized');
-      return callback(null, userId, username, uuid);
+      return callback(null, userId, username, uuid, isSuperuser, isModerator);
     } else {
       return socket.emit('unauthorized');
     }

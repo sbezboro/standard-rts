@@ -83,7 +83,7 @@ exports.start = function(io, apis) {
   .on('connection', function(socket) {
     socket.on('auth', function(data) {
       socket.removeAllListeners('auth');
-      realtime.authorize(socket, data, false, true, function(err, userId, username, uuid) {
+      realtime.authorize(socket, data, false, true, function(err, userId, username, uuid, isSuperuser, isModerator) {
         if (err) {
           socket.emit('unauthorized');
           return;
@@ -100,6 +100,8 @@ exports.start = function(io, apis) {
         socket.userId = userId;
         socket.username = username;
         socket.uuid = uuid;
+        socket.isSuperuser = isSuperuser;
+        socket.isModerator = isModerator;
 
         var unique = realtime.addConnection(socket, 'chat');
         joinServer(socket, api, unique);
