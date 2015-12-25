@@ -2,7 +2,7 @@ var constants = require('../constants');
 var realtime = require('../realtime');
 var util = require('../util');
 
-exports.sendServerStatus = function(socket, serverId, redact) {
+exports.sendServerStatus = function(socket, serverId, redactSensitiveData) {
   var serverStatus = realtime.serverStatus[serverId];
 
   if (!serverStatus) {
@@ -20,7 +20,15 @@ exports.sendServerStatus = function(socket, serverId, redact) {
   }
 
   // Redact sensetive player info
-  if (redact) {
+  if (redactSensitiveData && !socket.isSuperuser) {
+    var whitelist;
+
+    if (socket.isModerator) {
+      whitelist = constants.PLAYER_PROPERTY_MODERATOR_WHITELIST;
+    } else {
+      whitelist = constants.PLAYER_PROPERTY_WHITELIST;
+    }
+
     var origPlayers = serverStatus.players;
     result.players = [];
 
@@ -30,8 +38,8 @@ exports.sendServerStatus = function(socket, serverId, redact) {
     for (i = 0; i < origPlayers.length; ++i) {
       player = {};
 
-      for (j = 0; j < constants.PLAYER_PROPERTY_WHITELIST.length; ++j) {
-        prop = constants.PLAYER_PROPERTY_WHITELIST[j];
+      for (j = 0; j < whitelist.length; ++j) {
+        prop = whitelist[j];
 
         player[prop] = origPlayers[i][prop];
       }

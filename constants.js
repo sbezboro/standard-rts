@@ -13,3 +13,12 @@ exports.PLAYER_PROPERTY_WHITELIST = [
   'rank',
   'time_spent'
 ];
+
+exports.PLAYER_PROPERTY_MODERATOR_WHITELIST = [
+  'address',
+  'username',
+  'nickname',
+  'nickname_ansi',
+  'rank',
+  'time_spent'
+];
