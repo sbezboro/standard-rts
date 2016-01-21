@@ -39,9 +39,9 @@ var isUserConnected = function(username) {
   return false;
 };
 
-var setupUserEndpoint = function(endpoint) {
+var initUserChannel = function() {
   io
-  .of('/' + endpoint)
+  .of('/user')
   .on('connection', function(socket) {
     socket.on('auth', function(data) {
       socket.removeAllListeners('auth');
@@ -56,22 +56,6 @@ var setupUserEndpoint = function(endpoint) {
         }
       });
     });
-  });
-
-  app.post('/' + endpoint, function (req, res) {
-    var secret = req.headers['x-standard-secret'];
-
-    if (secret !== config.authSecret) {
-      return res.status(403).send({
-        'err': 'Unauthorized'
-      });
-    }
-
-    var data = req.body;
-
-    io.of(endpoint).in(data.user_id).emit(data.action, data.payload);
-
-    res.send({});
   });
 };
 
@@ -227,6 +211,22 @@ exports.init = function(_config, callback) {
     });
   });
 
+  app.post('/event/user', function (req, res) {
+    var secret = req.headers['x-standard-secret'];
+
+    if (secret !== config.authSecret) {
+      return res.status(403).send({
+        'err': 'Unauthorized'
+      });
+    }
+
+    var data = req.body;
+
+    io.of('user').in(data.user_id).emit(data.action, data.payload);
+
+    res.send({});
+  });
+
   stats = new StatsD(config.statsd);
   
   if (config.rollbar) {
@@ -287,8 +287,7 @@ exports.start = function() {
   consoleServer.start(io, apis);
   chatServer.start(io, apis);
 
-  setupUserEndpoint('messages');
-  setupUserEndpoint('notifications');
+  initUserChannel();
 };
 
 exports.apis = apis;
