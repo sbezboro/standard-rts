@@ -53,6 +53,20 @@ var initUserChannel = function() {
 
         if (userId) {
           socket.join(userId);
+
+          var options = {
+            uri: 'http://' + config.website + '/api/v1/rts_user_connection',
+            headers: {
+              'X-Standard-Secret': config.authSecret,
+              'X-Standard-User-Id': userId
+            }
+          };
+
+          request(options, function(error, response, body) {
+            if (error || response.statusCode != 200) {
+              console.log(error);
+            }
+          });
         }
       });
     });
