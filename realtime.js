@@ -192,6 +192,32 @@ exports.removeConnection = function(socket) {
   return unique;
 };
 
+exports.getActiveWebChatUsers = function() {
+  var userMap = {};
+  var result = [];
+
+  var id;
+  for (id in connections) {
+    if (!connections.hasOwnProperty(id)) {
+      continue;
+    }
+
+    var connection = connections[id];
+    if (connection.type == 'chat' && connection.username &&
+        !userMap[connection.username]) {
+      userMap[connection.username] = true;
+
+      result.push({
+        active: connection.active,
+        username: connection.username,
+        uuid: connection.uuid
+      });
+    }
+  }
+
+  return result;
+};
+
 exports.init = function(_config, callback) {
   config = _config;
 
@@ -199,29 +225,8 @@ exports.init = function(_config, callback) {
   app.use(bodyParser.json());
 
   app.get('/users', function(req, res) {
-    var userMap = {};
-    var result = [];
-
-    var id;
-    for (id in connections) {
-      if (!connections.hasOwnProperty(id)) {
-        continue;
-      }
-
-      var connection = connections[id];
-      if (connection.type == 'chat' && connection.username &&
-          !userMap[connection.username]) {
-        userMap[connection.username] = true;
-
-        result.push({
-          username: connection.username,
-          uuid: connection.uuid
-        });
-      }
-    }
-
     res.send({
-      users: result
+      users: exports.getActiveWebChatUsers()
     });
   });
 

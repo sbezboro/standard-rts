@@ -48,6 +48,8 @@ exports.sendServerStatus = function(socket, serverId, redactSensitiveData) {
     }
   }
 
+  result.users = realtime.getActiveWebChatUsers();
+
   socket.emit('server-status', result);
 };
 
