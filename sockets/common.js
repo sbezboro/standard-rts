@@ -2,7 +2,7 @@ var constants = require('../constants');
 var realtime = require('../realtime');
 var util = require('../util');
 
-exports.sendServerStatus = function(socket, serverId, redactSensitiveData) {
+exports.sendServerStatus = function(socket, serverId) {
   var serverStatus = realtime.serverStatus[serverId];
 
   if (!serverStatus) {
@@ -19,8 +19,8 @@ exports.sendServerStatus = function(socket, serverId, redactSensitiveData) {
     }
   }
 
-  // Redact sensetive player info
-  if (redactSensitiveData && !socket.isSuperuser) {
+  // Redact sensetive player info for non superusers
+  if (!socket.isSuperuser) {
     var whitelist;
 
     if (socket.isModerator) {
@@ -48,7 +48,8 @@ exports.sendServerStatus = function(socket, serverId, redactSensitiveData) {
     }
   }
 
-  result.users = realtime.getActiveWebChatUsers();
+  var redactAddress = !socket.isSuperuser && !socket.isModerator;
+  result.users = realtime.getActiveWebChatUsers(redactAddress);
 
   socket.emit('server-status', result);
 };

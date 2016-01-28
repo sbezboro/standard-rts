@@ -192,7 +192,7 @@ exports.removeConnection = function(socket) {
   return unique;
 };
 
-exports.getActiveWebChatUsers = function() {
+exports.getActiveWebChatUsers = function(redactAddress) {
   var userMap = {};
   var result = [];
 
@@ -207,11 +207,17 @@ exports.getActiveWebChatUsers = function() {
         !userMap[connection.username]) {
       userMap[connection.username] = true;
 
-      result.push({
+      var user = {
         active: connection.active,
         username: connection.username,
         uuid: connection.uuid
-      });
+      };
+
+      if (!redactAddress) {
+        user.address = connection.address;
+      }
+
+      result.push(user);
     }
   }
 
@@ -226,7 +232,7 @@ exports.init = function(_config, callback) {
 
   app.get('/users', function(req, res) {
     res.send({
-      users: exports.getActiveWebChatUsers()
+      users: exports.getActiveWebChatUsers(true)
     });
   });
 

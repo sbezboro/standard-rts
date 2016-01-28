@@ -134,7 +134,7 @@ exports.start = function(io, apis) {
         });
 
         var statusInterval = setInterval(function() {
-          common.sendServerStatus(socket, serverId, true);
+          common.sendServerStatus(socket, serverId);
         }, 1000);
 
         socket.on('chat-input', function (data) {
