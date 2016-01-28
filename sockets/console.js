@@ -21,6 +21,8 @@ exports.start = function(io, apis) {
           return;
         }
 
+        socket.isSuperuser = isSuperuser;
+
         var serverId = data.serverId;
         var api = apis[serverId];
 
