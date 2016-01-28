@@ -203,7 +203,7 @@ exports.getActiveWebChatUsers = function(redactAddress) {
     }
 
     var connection = connections[id];
-    if (connection.type == 'chat' && connection.username &&
+    if (connection.type == 'chat' && connection.username && connection.uuid &&
         !userMap[connection.username]) {
       userMap[connection.username] = true;
 
