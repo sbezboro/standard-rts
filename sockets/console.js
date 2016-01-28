@@ -57,34 +57,6 @@ exports.start = function(io, apis) {
 
         var statusInterval = setInterval(function() {
           common.sendServerStatus(socket, serverId);
-
-          var users = [];
-
-          var id;
-          for (id in realtime.connections) {
-            if (!realtime.connections.hasOwnProperty(id)) {
-              continue;
-            }
-
-            var connection = realtime.connections[id];
-
-            var result = {
-              type: connection.type,
-              address: connection.address,
-              active: connection.active
-            };
-
-            if (connection.username && connection.uuid) {
-              result.username = connection.username;
-              result.uuid = connection.uuid;
-            }
-
-            users.push(result);
-          }
-
-          socket.emit('chat-users', {
-            users: users
-          });
         }, 1000);
 
         socket.on('console-input', function(data) {
