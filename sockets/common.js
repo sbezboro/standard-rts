@@ -2,6 +2,7 @@ var constants = require('../constants');
 var realtime = require('../realtime');
 var util = require('../util');
 
+// TODO: add LRU cache
 var nicknameMap = {};
 
 exports.sendServerStatus = function(socket, serverId) {
@@ -21,6 +22,16 @@ exports.sendServerStatus = function(socket, serverId) {
     }
   }
 
+  var i;
+  var player;
+  for (i = 0; i < serverStatus.players.length; ++i) {
+    player = serverStatus.players[i];
+    if (player.nickname) {
+      // Cache player's nickname for use elsewhere
+      nicknameMap[player.uuid] = player.nickname;
+    }
+  }
+
   // Redact sensetive player info for non superusers
   if (!socket.isSuperuser) {
     var whitelist;
@@ -34,9 +45,7 @@ exports.sendServerStatus = function(socket, serverId) {
     var origPlayers = serverStatus.players;
     result.players = [];
 
-    var i;
     var j;
-    var player;
     for (i = 0; i < origPlayers.length; ++i) {
       player = {};
 
