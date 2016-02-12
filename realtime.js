@@ -88,6 +88,7 @@ var initServerStatusGetter = function(serverId) {
             var nicknameAnsi = data.players[i].nickname_ansi;
             if (nicknameAnsi) {
               data.players[i].nicknameAnsi = util.ansiConvert.toHtml(nicknameAnsi);
+              delete data.players[i].nickname_ansi;
             }
           }
 
