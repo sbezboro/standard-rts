@@ -192,7 +192,7 @@ exports.removeConnection = function(socket) {
   return unique;
 };
 
-exports.getActiveWebChatUsers = function(redactAddress) {
+exports.getActiveWebChatUsers = function(redactAddress, nicknameMap) {
   var userMap = {};
   var result = [];
 
@@ -212,6 +212,10 @@ exports.getActiveWebChatUsers = function(redactAddress) {
         username: connection.username,
         uuid: connection.uuid
       };
+
+      if (nicknameMap.hasOwnProperty(connection.uuid)) {
+        user.nickname = nicknameMap[connection.uuid];
+      }
 
       if (!redactAddress) {
         user.address = connection.address;

@@ -2,6 +2,8 @@ var constants = require('../constants');
 var realtime = require('../realtime');
 var util = require('../util');
 
+var nicknameMap = {};
+
 exports.sendServerStatus = function(socket, serverId) {
   var serverStatus = realtime.serverStatus[serverId];
 
@@ -49,7 +51,7 @@ exports.sendServerStatus = function(socket, serverId) {
   }
 
   var redactAddress = !socket.isSuperuser && !socket.isModerator;
-  result.users = realtime.getActiveWebChatUsers(redactAddress);
+  result.users = realtime.getActiveWebChatUsers(redactAddress, nicknameMap);
 
   socket.emit('server-status', result);
 };
