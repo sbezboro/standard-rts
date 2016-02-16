@@ -214,7 +214,7 @@ exports.getActiveWebChatUsers = function(redactAddress, nicknameMap) {
         uuid: connection.uuid
       };
 
-      if (nicknameMap.hasOwnProperty(connection.uuid)) {
+      if (nicknameMap && nicknameMap[connection.uuid]) {
         user.nickname = nicknameMap[connection.uuid];
       }
 
