@@ -15,7 +15,6 @@ var chatRegexPats = [
 ];
 
 var urlpat = /(\w*\.?\w+\.[\w+]{2,3}[\.\/\?\w&=\-]*)/;
-var boldPat = /\<\/?b\>/g;
 
 var patMatch = function(line) {
   for (var i = 0; i < chatRegexPats.length; ++i) {
@@ -122,9 +121,6 @@ exports.start = function(io, apis) {
             line = util.htmlEncode(line);
 
             line = util.ansiConvert.toHtml(line);
-
-            // Strip out bold tags
-            line = line.replace(boldPat, '');
 
             // Linkify possible urls
             line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');

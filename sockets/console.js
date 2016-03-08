@@ -7,7 +7,6 @@ var chatRegexPat = /\[\*WC\*\]/;
 var consoleChatRegexStripPat = /\[\*CWC\*\]/;
 
 var urlpat = /(\w*\.?\w+\.[\w+]{2,3}[\.\/\?\w&=\-]*)/;
-var boldPat = /\<\/?b\>/g;
 
 exports.start = function(io, apis) {
   io
@@ -46,9 +45,6 @@ exports.start = function(io, apis) {
 
             // Convert ansi color to html
             line = util.ansiConvert.toHtml(line);
-
-            // Strip out bold tags
-            line = line.replace(boldPat, '');
 
             // Linkify possible urls
             line = line.replace(urlpat, '<a href="http://$1" target="_blank">$1</a>');
