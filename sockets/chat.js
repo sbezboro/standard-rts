@@ -171,6 +171,10 @@ exports.start = function(io, apis) {
                       socket.emit('chat', {
                         line: "You have been muted!"
                       });
+                    } else if (data.result == constants.API_CALL_RESULTS['never_joined']) {
+                      socket.emit('chat', {
+                        line: "You haven't joined this server yet, you need to join once to be able to use web chat."
+                      });
                     }
                   }
                 });

@@ -3,7 +3,8 @@ exports.API_CALL_RESULTS = {
   'exception': 1,
   'not_handled': 2,
   'banned': 3,
-  'muted': 4
+  'muted': 4,
+  'never_joined': 5
 };
 
 exports.PLAYER_PROPERTY_WHITELIST = [
