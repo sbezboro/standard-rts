@@ -138,6 +138,9 @@ exports.start = function(io, apis) {
             return;
           }
 
+          var connection = realtime.connections[socket.id];
+          connection.lastActive = Math.round(Date.now() / 1000);
+
           var userId = socket.userId;
           var uuid = socket.uuid;
           var username = socket.username;
@@ -192,6 +195,7 @@ exports.start = function(io, apis) {
 
           var connection = realtime.connections[socket.id];
           connection.active = data.active;
+          connection.lastActive = Math.round(Date.now() / 1000);
         });
 
         socket.on('disconnect', function() {

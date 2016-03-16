@@ -159,7 +159,8 @@ exports.addConnection = function(socket, type) {
   var uuid = socket.uuid;
 
   var connection = {
-    connectionTime: Math.floor(new Date().getTime() / 1000),
+    connectionTime: Math.round(Date.now() / 1000),
+    lastActive: Math.round(Date.now() / 1000),
     address: address,
     type: type,
     socketId: socket.id,
