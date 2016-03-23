@@ -87,7 +87,10 @@ var initServerStatusGetter = function(serverId) {
           for (var i = 0; i < data.players.length; ++i) {
             var nicknameAnsi = data.players[i].nickname_ansi;
             if (nicknameAnsi) {
-              data.players[i].nicknameAnsi = util.ansiConvert.toHtml(nicknameAnsi);
+              // Add '0;' after every '[' to fix html span generation, otherwise all spans are nested
+              var fixedNicknameAnsi = nicknameAnsi.replace(/\[3/g, '[0;3');
+
+              data.players[i].nicknameAnsi = util.ansiConvert.toHtml(fixedNicknameAnsi);
               delete data.players[i].nickname_ansi;
             }
           }
