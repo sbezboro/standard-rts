@@ -8,7 +8,11 @@ var config = {
   mcApiPort: 20059,
   mcApiUsername: 'username',
   mcApiPassword: 'password',
-  mcApiSalt: 'salt'
+  mcApiSalt: 'salt',
+
+  memcached: {
+    urls: ['127.0.0.1:11211']
+  },
 }
 
 module.exports = config;
