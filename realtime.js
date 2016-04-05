@@ -7,6 +7,7 @@ var http = require('http')
   , events = require('events')
   , crypto = require('crypto')
   , StatsD = require('node-statsd')
+  , nicknameCache = require('./caches/nickname')
   , logger = require('./logger')
   , jsonapi = require('./jsonapi')
   , streams = require('./streams')
@@ -197,9 +198,31 @@ exports.removeConnection = function(socket) {
   return unique;
 };
 
-exports.getActiveWebChatUsers = function(redactAddress, nicknameMap) {
+var insertActiveWebChatUser = function(connection, redactAddress, users, callback) {
+  var user = {
+    active: connection.active,
+    username: connection.username,
+    uuid: connection.uuid
+  };
+
+  if (!redactAddress) {
+    user.address = connection.address;
+  }
+
+  nicknameCache.getNickname(connection.uuid, function(err, data) {
+    if (!err && data) {
+      user.nickname = data;
+    }
+
+    users.push(user);
+
+    callback();
+  });
+};
+
+exports.getActiveWebChatUsers = function(redactAddress, callback) {
   var userMap = {};
-  var result = [];
+  var validConnections = [];
 
   var id;
   for (id in connections) {
@@ -208,29 +231,22 @@ exports.getActiveWebChatUsers = function(redactAddress, nicknameMap) {
     }
 
     var connection = connections[id];
-    if (connection.type == 'chat' && connection.username && connection.uuid &&
-        !userMap[connection.username]) {
+    if (connection.type == 'chat' && connection.username && connection.uuid && !userMap[connection.username]) {
       userMap[connection.username] = true;
-
-      var user = {
-        active: connection.active,
-        username: connection.username,
-        uuid: connection.uuid
-      };
-
-      if (nicknameMap && nicknameMap[connection.uuid]) {
-        user.nickname = nicknameMap[connection.uuid];
-      }
-
-      if (!redactAddress) {
-        user.address = connection.address;
-      }
-
-      result.push(user);
+      validConnections.push(connection);
     }
   }
 
-  return result;
+  var i;
+  var inserted = 0;
+  var result = [];
+  for (i = 0; i < validConnections.length; ++i) {
+    insertActiveWebChatUser(validConnections[i], redactAddress, result, function(err) {
+      if (++inserted == validConnections.length) {
+        callback(null, result);
+      }
+    });
+  }
 };
 
 exports.init = function(_config, callback) {
@@ -240,8 +256,10 @@ exports.init = function(_config, callback) {
   app.use(bodyParser.json());
 
   app.get('/users', function(req, res) {
-    res.send({
-      users: exports.getActiveWebChatUsers(true)
+    exports.getActiveWebChatUsers(true, function(err, users) {
+      res.send({
+        users: users
+      });
     });
   });
 
@@ -324,6 +342,7 @@ exports.start = function() {
   initUserChannel();
 };
 
+exports.config = config;
 exports.apis = apis;
 exports.connections = connections;
 exports.serverStatus = serverStatus;

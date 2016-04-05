@@ -1,9 +1,7 @@
 var constants = require('../constants');
+var nicknameCache = require('../caches/nickname');
 var realtime = require('../realtime');
 var util = require('../util');
-
-// TODO: add LRU cache
-var nicknameMap = {};
 
 exports.sendServerStatus = function(socket, serverId) {
   var serverStatus = realtime.serverStatus[serverId];
@@ -28,7 +26,7 @@ exports.sendServerStatus = function(socket, serverId) {
     player = serverStatus.players[i];
     if (player.nickname) {
       // Cache player's nickname for use elsewhere
-      nicknameMap[player.uuid] = player.nickname;
+      nicknameCache.setNickname(player.uuid, player.nickname);
     }
   }
 
@@ -60,9 +58,11 @@ exports.sendServerStatus = function(socket, serverId) {
   }
 
   var redactAddress = !socket.isSuperuser && !socket.isModerator;
-  result.users = realtime.getActiveWebChatUsers(redactAddress, nicknameMap);
+  realtime.getActiveWebChatUsers(redactAddress, function(err, users) {
+    result.users = users;
 
-  socket.emit('server-status', result);
+    socket.emit('server-status', result);
+  });
 };
 
 exports.handleStreamData = function(error, data, socket, name, prepareLine) {
