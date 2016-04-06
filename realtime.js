@@ -323,6 +323,10 @@ exports.init = function(_config, callback) {
 
       initServerStatusGetter(id);
     }
+
+    setInterval(function() {
+      stats.gauge('rts.connections.count', Object.keys(connections).length);
+    }, 5000);
       
     return callback();
   });
