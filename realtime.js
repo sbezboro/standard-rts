@@ -190,9 +190,9 @@ exports.removeConnection = function(socket) {
   var connection = connections[socket.id];
   delete connections[socket.id];
 
-  var username = connection.username;
-  if (username) {
-    unique = !isUserConnected(username);
+  var uuid = connection.uuid;
+  if (uuid) {
+    unique = !isUserConnected(uuid);
   }
 
   return unique;
