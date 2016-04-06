@@ -290,18 +290,12 @@ exports.init = function(_config, callback) {
       rollbar.handleUncaughtExceptions();
     }
   }
-  
-  var options = {
-    uri: 'http://' + config.website + '/api/v1/servers'
-  };
-  
-  request(options, function(error, response, body) {
-    if (error || response.statusCode != 200) {
-      return callback(new Error("Not able to get list of servers from api!"));
+
+  internalApi.getServers(function(err, data) {
+    if (err) {
+      return callback(err);
     }
-    
-    var data = JSON.parse(body);
-    
+
     var i;
     for (i = 0; i < data.servers.length; ++i) {
       var server = data.servers[i];
@@ -312,7 +306,7 @@ exports.init = function(_config, callback) {
 
       var id = server.id;
       var address = server.address;
-      
+
       apis[id] = new jsonapi.JSONAPI({
         hostname: address,
         port: config.mcApiPort,
@@ -327,7 +321,7 @@ exports.init = function(_config, callback) {
     setInterval(function() {
       stats.gauge('rts.connections.count', Object.keys(connections).length);
     }, 5000);
-      
+
     return callback();
   });
 };

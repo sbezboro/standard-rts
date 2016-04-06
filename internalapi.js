@@ -32,6 +32,22 @@ exports.rtsUserConnection = function(userId) {
   });
 };
 
+exports.getServers = function(callback) {
+  var options = {
+    uri: getUrl('servers'),
+    headers: getHeaders()
+  };
+
+  request(options, function(error, response, body) {
+    if (error || response.statusCode != 200) {
+      console.log(error);
+      return callback(error);
+    }
+
+    callback(null, JSON.parse(body));
+  });
+};
+
 exports.getPlayerData = function(userId, callback) {
   var options = {
     uri: getUrl('get_player_data'),
