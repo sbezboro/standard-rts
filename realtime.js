@@ -26,7 +26,7 @@ var connections = {};
 
 var serverStatus = {};
 
-var isUserConnected = function(username) {
+var isUserConnected = function(uuid) {
   var id;
   for (id in connections) {
     if (!connections.hasOwnProperty(id)) {
@@ -34,7 +34,7 @@ var isUserConnected = function(username) {
     }
 
     var connection = connections[id];
-    if (connection.username === username) {
+    if (connection.uuid === uuid) {
       return true;
     }
   }
@@ -165,7 +165,7 @@ exports.addConnection = function(socket, type) {
     connection.username = username;
     connection.uuid = uuid;
 
-    unique = !isUserConnected(username);
+    unique = !isUserConnected(uuid);
 
     internalApi.getPlayerData(userId, function(err, data) {
       if (!err) {
