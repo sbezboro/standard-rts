@@ -1,5 +1,4 @@
 var constants = require('../constants');
-var nicknameCache = require('../caches/nickname');
 var realtime = require('../realtime');
 var util = require('../util');
 
@@ -17,16 +16,6 @@ exports.sendServerStatus = function(socket, serverId) {
   for (prop in serverStatus) {
     if (serverStatus.hasOwnProperty(prop)) {
       result[prop] = serverStatus[prop];
-    }
-  }
-
-  var i;
-  var player;
-  for (i = 0; i < serverStatus.players.length; ++i) {
-    player = serverStatus.players[i];
-    if (player.nickname) {
-      // Cache player's nickname for use elsewhere
-      nicknameCache.setNickname(player.uuid, player.nickname);
     }
   }
 

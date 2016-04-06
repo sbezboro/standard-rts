@@ -1,4 +1,5 @@
 var common = require('./common')
+  , internalApi = require('../internalapi')
   , streams = require('../streams')
   , realtime = require('../realtime')
   , util = require('../util')

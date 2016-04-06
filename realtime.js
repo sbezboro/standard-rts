@@ -13,6 +13,7 @@ var http = require('http')
   , streams = require('./streams')
   , consoleServer = require('./sockets/console')
   , chatServer = require('./sockets/chat')
+  , internalApi = require('./internalapi')
   , util = require('./util');
 
 var app = null;
@@ -55,19 +56,7 @@ var initUserChannel = function() {
         if (userId) {
           socket.join(userId);
 
-          var options = {
-            uri: 'http://' + config.website + '/api/v1/rts_user_connection',
-            headers: {
-              'X-Standard-Secret': config.authSecret,
-              'X-Standard-User-Id': userId
-            }
-          };
-
-          request(options, function(error, response, body) {
-            if (error || response.statusCode != 200) {
-              console.log(error);
-            }
-          });
+          internalApi.rtsUserConnection(userId);
         }
       });
     });
@@ -177,6 +166,17 @@ exports.addConnection = function(socket, type) {
     connection.uuid = uuid;
 
     unique = !isUserConnected(username);
+
+    internalApi.getPlayerData(userId, function(err, data) {
+      if (!err) {
+        var key;
+        for (key in data) {
+          if (data.hasOwnProperty(key)) {
+            connection[key] = data[key];
+          }
+        }
+      }
+    });
   }
 
   connections[socket.id] = connection;
@@ -205,19 +205,17 @@ var insertActiveWebChatUser = function(connection, redactAddress, users, callbac
     uuid: connection.uuid
   };
 
+  if (connection.nickname) {
+    user.nickname = connection.nickname;
+  }
+
   if (!redactAddress) {
     user.address = connection.address;
   }
 
-  nicknameCache.getNickname(connection.uuid, function(err, data) {
-    if (!err && data) {
-      user.nickname = data;
-    }
+  users.push(user);
 
-    users.push(user);
-
-    callback();
-  });
+  callback();
 };
 
 exports.getActiveWebChatUsers = function(redactAddress, callback) {
