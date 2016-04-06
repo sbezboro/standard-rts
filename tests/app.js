@@ -1,15 +1,22 @@
 var vows = require('vows'),
   assert = require('assert'),
+  sinon = require('sinon'),
+  internalapi = require('../internalapi'),
   realtime = require('../realtime');
 
-var config = {
-  website: 'standardsurvival.com'
-};
 
 var suite = vows.describe('Realtime server').addBatch({
   'The server': {
     topic: function() {
-      realtime.init(config, this.callback);
+      var getServers = sinon.stub(internalapi, 'getServers', function(callback) {
+        callback(null, {
+          servers: []
+        });
+      });
+
+      realtime.init(this.callback);
+
+      getServers.restore();
     },
     'should start': function(err) {
       assert.isUndefined(err);

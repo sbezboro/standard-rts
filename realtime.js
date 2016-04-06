@@ -7,7 +7,7 @@ var http = require('http')
   , events = require('events')
   , crypto = require('crypto')
   , StatsD = require('node-statsd')
-  , nicknameCache = require('./caches/nickname')
+  , config = require('./config')
   , logger = require('./logger')
   , jsonapi = require('./jsonapi')
   , streams = require('./streams')
@@ -18,7 +18,6 @@ var http = require('http')
 
 var app = null;
 var io = null;
-var config = null;
 var apis = {};
 var stats = null;
 
@@ -247,9 +246,7 @@ exports.getActiveWebChatUsers = function(redactAddress, callback) {
   }
 };
 
-exports.init = function(_config, callback) {
-  config = _config;
-
+exports.init = function(callback) {
   app = express();
   app.use(bodyParser.json());
 
