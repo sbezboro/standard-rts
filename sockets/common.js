@@ -19,6 +19,29 @@ exports.sendServerStatus = function(socket, serverId) {
     }
   }
 
+  var i;
+  var player;
+  var nicknameMap = {};
+  for (i = 0; i < serverStatus.players.length; ++i) {
+    player = serverStatus.players[i];
+    if (player.nickname) {
+      nicknameMap[player.uuid] = player.nickname;
+    }
+  }
+
+  var socketId;
+  var connection;
+  for (socketId in realtime.connections) {
+    if (realtime.connections.hasOwnProperty(socketId)) {
+      connection = realtime.connections[socketId];
+      if (connection.uuid && nicknameMap[connection.uuid]) {
+        connection.nickname = nicknameMap[connection.uuid];
+      } else if (connection.nickname) {
+        delete connection.nickname;
+      }
+    }
+  }
+
   // Redact sensetive player info for non superusers
   if (!socket.isSuperuser) {
     var whitelist;
