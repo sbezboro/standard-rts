@@ -26,6 +26,8 @@ exports.sendServerStatus = function(socket, serverId) {
     player = serverStatus.players[i];
     if (player.nickname) {
       nicknameMap[player.uuid] = player.nickname;
+    } else {
+      nicknameMap[player.uuid] = '';
     }
   }
 
@@ -36,7 +38,7 @@ exports.sendServerStatus = function(socket, serverId) {
       connection = realtime.connections[socketId];
       if (connection.uuid && nicknameMap[connection.uuid]) {
         connection.nickname = nicknameMap[connection.uuid];
-      } else if (connection.nickname) {
+      } else if (nicknameMap[connection.uuid] == '' && connection.nickname) {
         delete connection.nickname;
       }
     }
