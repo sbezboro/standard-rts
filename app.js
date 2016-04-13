@@ -1,5 +1,7 @@
 var realtime = require('./realtime')
+  , config = require('./config')
   , logger = require('./logger');
+
 
 var main = function() {
   realtime.init(function(error) {
@@ -11,6 +13,8 @@ var main = function() {
     }
     
     realtime.start();
+
+    logger.info('Realtime server started on port ' + config.port);
   });
 };
 
