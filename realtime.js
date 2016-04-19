@@ -237,12 +237,17 @@ exports.getActiveWebChatUsers = function(redactAddress, callback) {
   var i;
   var inserted = 0;
   var result = [];
-  for (i = 0; i < validConnections.length; ++i) {
-    insertActiveWebChatUser(validConnections[i], redactAddress, result, function(err) {
-      if (++inserted == validConnections.length) {
-        callback(null, result);
-      }
-    });
+
+  if (validConnections.length) {
+    for (i = 0; i < validConnections.length; ++i) {
+      insertActiveWebChatUser(validConnections[i], redactAddress, result, function (err) {
+        if (++inserted == validConnections.length) {
+          callback(null, result);
+        }
+      });
+    }
+  } else {
+    callback(null, result);
   }
 };
 
