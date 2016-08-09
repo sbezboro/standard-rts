@@ -146,6 +146,12 @@ exports.start = function(io, apis) {
           var uuid = socket.uuid;
           var username = socket.username;
           if (userId) {
+            if (connection.banned) {
+              socket.emit('chat', {
+                line: "Whoops, looks like you are banned on the server! You won't be able to send any messages."
+              });
+              return;
+            }
             if (data.message) {
               data.message = data.message.substring(0, Math.min(80, data.message.length));
 

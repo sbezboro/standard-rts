@@ -228,7 +228,8 @@ exports.getActiveWebChatUsers = function(redactAddress, callback) {
     }
 
     var connection = connections[id];
-    if (connection.type == 'chat' && connection.username && connection.uuid && !userMap[connection.username]) {
+    if (connection.type == 'chat' && connection.username && connection.uuid && !connection.banned &&
+        !userMap[connection.username]) {
       userMap[connection.username] = true;
       validConnections.push(connection);
     }
