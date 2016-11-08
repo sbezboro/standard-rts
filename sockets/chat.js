@@ -146,6 +146,12 @@ exports.start = function(io, apis) {
           var uuid = socket.uuid;
           var username = socket.username;
           if (userId) {
+            if (!connection.can_post) {
+              socket.emit('chat', {
+                line: "You need to spend more time on the server before being able to chat here!"
+              });
+              return;
+            }
             if (connection.banned) {
               socket.emit('chat', {
                 line: "Whoops, looks like you are banned on the server! You won't be able to send any messages."
@@ -206,12 +212,13 @@ exports.start = function(io, apis) {
         });
 
         socket.on('disconnect', function() {
+          var connection = realtime.connections[socket.id];
           var unique = realtime.removeConnection(socket);
 
           streams.removeListeners(socket.id);
           clearInterval(statusInterval);
 
-          leaveServer(socket, api, unique);
+          leaveServer(socket, api, unique && !connection.banned);
         });
       });
     });
