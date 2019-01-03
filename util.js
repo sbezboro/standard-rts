@@ -31,12 +31,17 @@ var _ansi_mc_map = {
     "§r": "\x1B[39;0m",    // Reset r
 }
 
+var _ansi_mc_map_regexp = {};
+for (var code in _ansi_mc_map) {
+    _ansi_mc_map_regexp[code] = new RegExp(code, 'g');
+}
+
 var _ansitohtml = new ansitohtml();
 
 exports.ansiConvert = {
     toHtml: function(line) {
         for (var code in _ansi_mc_map) {
-            line = line.replace(code, _ansi_mc_map[code])
+            line = line.replace(_ansi_mc_map_regexp[code], _ansi_mc_map[code])
         }
 
         return _ansitohtml.toHtml(line)
