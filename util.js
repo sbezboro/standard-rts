@@ -33,7 +33,7 @@ var _ansi_mc_map = {
 
 var _ansi_mc_map_regexp = {};
 for (var code in _ansi_mc_map) {
-    _ansi_mc_map_regexp[code] = new RegExp(code, 'g');
+    _ansi_mc_map_regexp[code] = new RegExp(code, 'gi');
 }
 
 var _ansitohtml = new ansitohtml();
