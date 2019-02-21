@@ -188,6 +188,12 @@ exports.start = function(io, apis) {
                         line: "You haven't joined this server yet, you need to join once to be able to use web chat."
                       });
                     }
+
+                    if (data.data && data.data.message) {
+                      socket.emit('chat', {
+                        line: data.data.message
+                      });
+                    }
                   }
                 });
               }
