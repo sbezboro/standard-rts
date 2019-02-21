@@ -242,7 +242,7 @@ JSONAPI = (function() {
               url = makeURL(method, args, makeTag());
               _startConnection(url, callback, true);
             } else {
-              url = 'http://' + _this.hostname + ':' + _this.port + '/api/2/call';
+              url = 'http://' + _this.hostname + ':25565/api/2/call';
 
               var payload = {
                 name: method,
@@ -253,7 +253,7 @@ JSONAPI = (function() {
 
               var options = {
                 uri: url,
-                body: JSON.stringify(payload).replace(/[^A-Za-z 0-9 \.,\?'""!@#\$%\^&\*\(\)-_=\+;:<>\/\\\|\}\{\[\]`~]*/g, ''),
+                body: JSON.stringify(payload),
                 headers: {
                   'Content-Type': 'application/json'
                 }
