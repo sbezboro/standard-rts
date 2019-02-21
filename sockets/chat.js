@@ -9,10 +9,10 @@ var chatRegexStripPat = /\[\*WC\*\]/;
 var consoleChatRegexStripPat = /\[\*CWC\*\]/;
 
 var chatRegexPats = [
-  /(?!AllianceChat|FactionChat|issued\ server\ command)<.+>\ /,
-  /\[Server/,
-  chatRegexStripPat,
-  consoleChatRegexStripPat
+  /^\[\d\d:\d\d:\d\d INFO]: §d§l\[Server\]/,  // server message
+  /^\[\d\d:\d\d:\d\d INFO]: §r<.+>\ /,  // regular player chat
+  /^\[\d\d:\d\d:\d\d INFO]: \[\*WC\*\]/,  // text directed at webchat only
+  /^\[\d\d:\d\d:\d\d INFO]: \[\*CWC\*\]/,  // text directed to console and webchat
 ];
 
 var urlpat = /(\w*\.?\w+\.[\w+]{2,3}[\.\/\?\w&=\-]*)/;
