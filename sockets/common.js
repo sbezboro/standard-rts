@@ -71,7 +71,7 @@ exports.sendServerStatus = function(socket, serverId) {
     }
   }
 
-  var redactAddress = !socket.isSuperuser && !socket.isModerator;
+  var redactAddress = !socket.isSuperuser;
   realtime.getActiveWebChatUsers(redactAddress, function(err, users) {
     result.users = users;
 

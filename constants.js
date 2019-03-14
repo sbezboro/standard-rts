@@ -16,7 +16,6 @@ exports.PLAYER_PROPERTY_WHITELIST = [
 ];
 
 exports.PLAYER_PROPERTY_MODERATOR_WHITELIST = [
-  'address',
   'username',
   'nickname',
   'nickname_ansi',
