@@ -11,6 +11,7 @@ var consoleChatRegexStripPat = /\[\*CWC\*\]/;
 var chatRegexPats = [
   /^\[\d\d:\d\d:\d\d INFO]: §d§l\[Server\]/,  // server message
   /^\[\d\d:\d\d:\d\d INFO]: §r<.+>\ /,  // regular player chat
+  /^\[\d\d:\d\d:\d\d INFO]: §5<M>§r<.+>\ /,  // mod player chat
   /^\[\d\d:\d\d:\d\d INFO]: \[\*WC\*\]/,  // text directed at webchat only
   /^\[\d\d:\d\d:\d\d INFO]: \[\*CWC\*\]/,  // text directed to console and webchat
 ];
