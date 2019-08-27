@@ -8,6 +8,7 @@ exports.API_CALL_RESULTS = {
 };
 
 exports.PLAYER_PROPERTY_WHITELIST = [
+  'uuid',
   'username',
   'nickname',
   'nickname_ansi',
@@ -16,6 +17,7 @@ exports.PLAYER_PROPERTY_WHITELIST = [
 ];
 
 exports.PLAYER_PROPERTY_MODERATOR_WHITELIST = [
+  'uuid',
   'username',
   'nickname',
   'nickname_ansi',
