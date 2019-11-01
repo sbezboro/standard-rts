@@ -13,7 +13,7 @@
   "dependencies": {
     "socket.io": "~1.2.0",
     "ansi-to-html": "https://github.com/sbezboro/ansi-to-html/archive/e0f8d655ac138e578f7e719b5d1129c01a52ebf9.tar.gz",
-    "request": "~2.16.6",
+    "request": "~2.88.0",
     "rollbar": "~0.2.2",
     "vows": "~0.7.0",
     "winston": "~0.7.2",
