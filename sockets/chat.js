@@ -9,9 +9,9 @@ var chatRegexStripPat = /\[\*WC\*\]/;
 var consoleChatRegexStripPat = /\[\*CWC\*\]/;
 
 var chatRegexPats = [
-  /^\[\d\d:\d\d:\d\d INFO]: §d§l\[Server\]/,  // server message
-  /^\[\d\d:\d\d:\d\d INFO]: §r<.+>\ /,  // regular player chat
-  /^\[\d\d:\d\d:\d\d INFO]: §r§5<M>§r<.+>\ /,  // mod player chat
+  /^\[\d\d:\d\d:\d\d INFO]: \x7fd\x7fl\[Server\]/,  // server message
+  /^\[\d\d:\d\d:\d\d INFO]: \x7fr<.+>\ /,  // regular player chat
+  /^\[\d\d:\d\d:\d\d INFO]: \x7fr\x7f5<M>\x7fr<.+>\ /,  // mod player chat
   /^\[\d\d:\d\d:\d\d INFO]: \[\*WC\*\]/,  // text directed at webchat only
   /^\[\d\d:\d\d:\d\d INFO]: \[\*CWC\*\]/,  // text directed to console and webchat
 ];
@@ -160,7 +160,7 @@ exports.start = function(io, apis) {
               return;
             }
             if (data.message) {
-              data.message = data.message.substring(0, Math.min(80, data.message.length)).replace(/§./g, '');
+              data.message = data.message.substring(0, Math.min(80, data.message.length)).replace(/§./g, '').replace(/\x7f./g, '');
 
               var now = new Date().getTime();
               var nextChatDelay = 600;
